@@ -85,8 +85,6 @@ df_send=df_final[['ticker','ordem','price','hilo']]
 
 df_string = df_send.to_string(index=False)
 
-TOKEN = '8108884436:AAFpCL-5HspNH_bj7S4vOgyysQ2ucU_FW-U'
-CHAT_ID = 402413373
 MESSAGE = df_string
 
 url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
