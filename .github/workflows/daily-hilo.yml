@@ -19,10 +19,26 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Instalar dependências
+      - name: Instalar dependências Python
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install --upgrade --no-cache-dir git+https://github.com/baselsm/tvdatafeed.git
+
+      - name: Instalar Chrome e ChromeDriver
+        uses: browser-actions/setup-chrome@v2
+        with:
+          install-chromedriver: true
+
+      - name: Verificar Chrome e ChromeDriver
+        run: |
+          google-chrome --version || chrome --version || chromium --version
+          chromedriver --version
 
       - name: Rodar script
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TV_USERNAME: ${{ secrets.TV_USERNAME }}
+          TV_PASSWORD: ${{ secrets.TV_PASSWORD }}
         run: python projeto_hilo.py
