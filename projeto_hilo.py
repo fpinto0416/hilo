@@ -11,8 +11,8 @@ TV_USERNAME = os.getenv("TV_USERNAME")
 TV_PASSWORD = os.getenv("TV_PASSWORD")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
-hoje = pd.to_datetime("2026-07-17").date()
-#hoje = pd.to_datetime("today").date()
+#hoje = pd.to_datetime("2026-07-17").date()
+hoje = pd.to_datetime("today").date()
 hoje_string = hoje.strftime("%d-%m-%Y")
 
 tv = TvDatafeed(TV_USERNAME, TV_PASSWORD)
@@ -111,7 +111,7 @@ for ativo, valor in Ativo_hilo.items():
     except Exception as e:
         print(f"Erro ao processar {ticker}: {e}")
     
-#df_final=df_final[df_final['change'] == 1]
+df_final=df_final[df_final['change'] == 1]
 df_final['ordem']=np.where(df_final['posicao']==1,'Compra','Venda')
 df_send=df_final[['ticker','ordem','price','hilo']]
 
