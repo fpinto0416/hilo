@@ -52,8 +52,38 @@ def importar_tradingview(ticker, hoje = pd.to_datetime("today").date()):
 
 df = pd.DataFrame()
 df_final= pd.DataFrame(columns=['ticker', 'price', 'hilo', 'posicao', 'change'])
-Ativo_hilo={'SMAL11': 41, 'BOVA11': 52, 'DIRR3': 40, 'TOTS3': 61, 'VBBR3': 36, 'BEEF3': 12, 'PCAR3': 25, 'ISAE4': 73, 'BRAV3': 10, 'VIVA3': 37, 'VALE3': 82, 'GMAT3': 43, 'USIM5': 21, 'CMIN3': 18, 'HYPE3': 41, 'SUZB3': 43, 'RDOR3': 13, 'CSMG3': 50, 'LREN3': 76, 'COGN3': 97, 'BHIA3': 20, 'ECOR3': 47, 'CXSE3': 70, 'PRIO3': 21, 'WEGE3': 13, 'CSNA3': 36, 'JHSF3': 27, 'BPAC11': 40, 'CYRE3': 57, 'RADL3': 29}
-
+Ativo_hilo = {
+    "ALOS3": 28,
+    "ALPA4": 31,
+    "BBAS3": 30,
+    "BEEF3": 16,
+    "BHIA3": 12,
+    "BOVA11": 26,
+    "BPAC11": 45,
+    "BRKM5": 61,
+    "CMIN3": 10,
+    "CSNA3": 22,
+    "CXSE3": 49,
+    "ENEV3": 20,
+    "EZTC3": 9,
+    "GMAT3": 26,
+    "HYPE3": 27,
+    "JHSF3": 22,
+    "MGLU3": 20,
+    "MOVI3": 25,
+    "MRVE3": 30,
+    "PETR4": 23,
+    "POMO4": 20,
+    "PRIO3": 8,
+    "PSSA3": 16,
+    "RADL3": 63,
+    "RDOR3": 35,
+    "SMAL11": 31,
+    "SUZB3": 11,
+    "USIM5": 11,
+    "VBBR3": 48,
+    "WEGE3": 87
+}
 for ativo, valor in Ativo_hilo.items():
     ticker = ativo
     n_hilo=valor
