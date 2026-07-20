@@ -82,8 +82,7 @@ Ativo_hilo = {
     "SMAL11": 31,
     "SUZB3": 11,
     "USIM5": 11,
-    "VBBR3": 48,
-    "WEGE3": 87
+    "VBBR3": 48
 }
 for ativo, valor in Ativo_hilo.items():
     ticker = ativo
