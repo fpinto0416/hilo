@@ -85,10 +85,10 @@ df_string = df_send.to_string(index=False)
 
 MESSAGE = df_string
 
-url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-data_hoje = {"chat_id": CHAT_ID, "text": hoje_string}
-saudacao = {"chat_id": CHAT_ID, "text": "HiLo - Sinais de Compra e Venda"}
-data = {"chat_id": CHAT_ID, "text": MESSAGE}
+url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+data_hoje = {"chat_id": TELEGRAM_CHAT_ID, "text": hoje_string}
+saudacao = {"chat_id": TELEGRAM_CHAT_ID, "text": "HiLo - Sinais de Compra e Venda"}
+data = {"chat_id": TELEGRAM_CHAT_ID, "text": MESSAGE}
 
 
 response1 = requests.post(url, data=saudacao)
