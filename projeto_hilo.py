@@ -7,8 +7,6 @@ import yfinance as yf
 import time
 from tvDatafeed import TvDatafeed, Interval
 
-username = 'YourTradingViewUsername'
-password = 'YourTradingViewPassword'
 tv = TvDatafeed(username, password)
 hoje = pd.to_datetime("today").date()
 hoje_string = hoje.strftime("%d-%m-%Y")
