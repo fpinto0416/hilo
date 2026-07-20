@@ -15,6 +15,7 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 hoje = pd.to_datetime("today").date()
 hoje_string = hoje.strftime("%d-%m-%Y")
 
+tv = TvDatafeed(TV_USERNAME, TV_PASSWORD, chromedriver_path="chromedriver")
 
 def importar_tradingview(ticker, hoje = pd.to_datetime("today").date()):
     tentativa = 0
@@ -125,9 +126,9 @@ saudacao = {"chat_id": TELEGRAM_CHAT_ID, "text": "HiLo - Sinais de Compra e Vend
 data = {"chat_id": TELEGRAM_CHAT_ID, "text": MESSAGE}
 
 
-response1 = requests.post(url, data=saudacao)
-response0 = requests.post(url, data=data_hoje)
-response = requests.post(url, data=data)
+response1 = requests.post(url, data=saudacao, timeout=30)
+response0 = requests.post(url, data=data_hoje, timeout=30)
+response = requests.post(url, data=data, timeout=30)
 print(response.json())  # Para verificar a resposta
 print(df_string)
 
