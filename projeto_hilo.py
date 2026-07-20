@@ -15,7 +15,7 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 hoje = pd.to_datetime("today").date()
 hoje_string = hoje.strftime("%d-%m-%Y")
 
-tv = TvDatafeed(TV_USERNAME, TV_PASSWORD, chromedriver_path="chromedriver")
+tv = TvDatafeed(TV_USERNAME, TV_PASSWORD)
 
 def importar_tradingview(ticker, hoje = pd.to_datetime("today").date()):
     tentativa = 0
