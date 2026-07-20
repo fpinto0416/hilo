@@ -11,8 +11,8 @@ TV_USERNAME = os.getenv("TV_USERNAME")
 TV_PASSWORD = os.getenv("TV_PASSWORD")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
-
-hoje = pd.to_datetime("today").date()
+hoje = pd.to_datetime("2026-07-17").date()
+#hoje = pd.to_datetime("today").date()
 hoje_string = hoje.strftime("%d-%m-%Y")
 
 tv = TvDatafeed(TV_USERNAME, TV_PASSWORD)
