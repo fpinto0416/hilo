@@ -112,7 +112,7 @@ for ativo, valor in Ativo_hilo.items():
         print(f"Erro ao processar {ticker}: {e}")
     
 df_final=df_final[df_final['change'] == 1]
-df_final['ordem']=np.where(df_final['posicao']==1,'Compra','Venda')
+#df_final['ordem']=np.where(df_final['posicao']==1,'Compra','Venda')
 df_send=df_final[['ticker','ordem','price','hilo']]
 
 df_string = df_send.to_string(index=False)
