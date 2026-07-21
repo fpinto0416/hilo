@@ -2,7 +2,7 @@ name: Daily Python Job
 
 on:
   schedule:
-    - cron: '17 19 * * *'
+    - cron: '0 18 * * *'
   workflow_dispatch:
 
 jobs:
