@@ -2,8 +2,7 @@ name: Daily Python Job
 
 on:
   schedule:
-    - cron: '45 17 * * 1-5'
-    - cron: '0 21 * * 1-5'
+    - cron: "30 21 * * 1-5"
 
   workflow_dispatch:
 
