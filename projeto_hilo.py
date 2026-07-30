@@ -113,9 +113,21 @@ for ativo, valor in Ativo_hilo.items():
     
 df_final=df_final[df_final['change'] == 1]
 df_final['ordem']=np.where(df_final['posicao']==1,'Compra','Venda')
-df_send=df_final[['ticker','ordem','price','hilo']]
+df_final['data']=hoje
+df_send=df_final[['data','ticker','ordem','price','hilo']]
 
 df_string = df_send.to_string(index=False)
+
+# Salva o histórico de ordens em Excel, servindo de base para o cálculo futuro
+# de payoff e taxa de acerto das previsões.
+HISTORICO_PATH = "historico_ordens.xlsx"
+if not df_send.empty:
+    if os.path.exists(HISTORICO_PATH):
+        df_historico = pd.read_excel(HISTORICO_PATH)
+        df_historico = pd.concat([df_historico, df_send], ignore_index=True)
+    else:
+        df_historico = df_send.copy()
+    df_historico.to_excel(HISTORICO_PATH, index=False)
 
 MESSAGE = df_string
 
