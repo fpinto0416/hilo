@@ -6,6 +6,7 @@ import requests
 import yfinance as yf
 import time
 from tvDatafeed import TvDatafeed, Interval
+import datetime
 
 TV_USERNAME = os.getenv("TV_USERNAME")
 TV_PASSWORD = os.getenv("TV_PASSWORD")
@@ -129,17 +130,61 @@ if not df_send.empty:
         df_historico = df_send.copy()
     df_historico.to_excel(HISTORICO_PATH, index=False)
 
+
+
+def dias_ate_proximo_vencimento():
+    # Obtém a data atual do sistema
+    hoje = datetime.date.today()
+    
+    def calcular_terceira_sexta(ano, mes):
+        # Define o primeiro dia do mês analisado
+        primeiro_dia = datetime.date(ano, mes, 1)
+        # Encontra a primeira sexta-feira do mês (weekday da sexta é 4)
+        offset_sexta = (4 - primeiro_dia.weekday() + 7) % 7
+        primeira_sexta = primeiro_dia + datetime.timedelta(days=offset_sexta)
+        # Soma 14 dias para chegar à terceira sexta-feira
+        return primeira_sexta + datetime.timedelta(weeks=2)
+
+    # Calcula a terceira sexta-feira do mês corrente
+    vencimento_atual = calcular_terceira_sexta(hoje.year, hoje.month)
+    
+    # Se o vencimento deste mês já passou, calcula o do próximo mês
+    if hoje > vencimento_atual:
+        if hoje.month == 12:
+            proximo_mes = 1
+            proximo_ano = hoje.year + 1
+        else:
+            proximo_mes = hoje.month + 1
+            proximo_ano = hoje.year
+        vencimento_alvo = calcular_terceira_sexta(proximo_ano, proximo_mes)
+    else:
+        vencimento_alvo = vencimento_atual
+        
+    # Calcula a diferença absoluta em dias
+    dias_restantes = (vencimento_alvo - hoje).days
+    
+    return vencimento_alvo, dias_restantes
+
+# Execução do script
+data_vencimento, dias_faltam = dias_ate_proximo_vencimento()
+venc_opc1=f"Próximo vencimento de opções: {data_vencimento.strftime('%d/%m/%Y')}"
+venc_opc2="Faltam exatamente: {dias_faltam} dias"
+
 MESSAGE = df_string
 
 url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
 data_hoje = {"chat_id": TELEGRAM_CHAT_ID, "text": hoje_string}
 saudacao = {"chat_id": TELEGRAM_CHAT_ID, "text": "HiLo - Sinais de Compra e Venda"}
 data = {"chat_id": TELEGRAM_CHAT_ID, "text": MESSAGE}
-
+venc_opc1_msn = {"chat_id": TELEGRAM_CHAT_ID, "text": venc_opc1}
+venc_opc2_msn = {"chat_id": TELEGRAM_CHAT_ID, "text": venc_opc2}
 
 response1 = requests.post(url, data=saudacao, timeout=30)
 response0 = requests.post(url, data=data_hoje, timeout=30)
 response = requests.post(url, data=data, timeout=30)
+response2 = requests.post(url, data=venc_opc1_msn, timeout=30)
+response2 = requests.post(url, data=venc_opc2_msn, timeout=30)
+
 print(response.json())  # Para verificar a resposta
 print(df_string)
 
