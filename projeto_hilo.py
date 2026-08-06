@@ -131,44 +131,65 @@ if not df_send.empty:
     df_historico.to_excel(HISTORICO_PATH, index=False)
 
 
+# inserir data para nao esquecer vencimento de opcoes
 
-def dias_ate_proximo_vencimento():
-    # Obtém a data atual do sistema
+def dias_uteis_ate_proximo_vencimento():
     hoje = datetime.date.today()
     
     def calcular_terceira_sexta(ano, mes):
-        # Define o primeiro dia do mês analisado
         primeiro_dia = datetime.date(ano, mes, 1)
-        # Encontra a primeira sexta-feira do mês (weekday da sexta é 4)
         offset_sexta = (4 - primeiro_dia.weekday() + 7) % 7
         primeira_sexta = primeiro_dia + datetime.timedelta(days=offset_sexta)
-        # Soma 14 dias para chegar à terceira sexta-feira
         return primeira_sexta + datetime.timedelta(weeks=2)
 
-    # Calcula a terceira sexta-feira do mês corrente
-    vencimento_atual = calcular_terceira_sexta(hoje.year, hoje.month)
-    
-    # Se o vencimento deste mês já passou, calcula o do próximo mês
-    if hoje > vencimento_atual:
+    # Identifica o vencimento correto (deste mês ou do próximo)
+    vencimento_alvo = calcular_terceira_sexta(hoje.year, hoje.month)
+    if hoje > vencimento_alvo:
         if hoje.month == 12:
-            proximo_mes = 1
-            proximo_ano = hoje.year + 1
+            vencimento_alvo = calcular_terceira_sexta(hoje.year + 1, 1)
         else:
-            proximo_mes = hoje.month + 1
-            proximo_ano = hoje.year
-        vencimento_alvo = calcular_terceira_sexta(proximo_ano, proximo_mes)
-    else:
-        vencimento_alvo = vencimento_atual
-        
-    # Calcula a diferença absoluta em dias
-    dias_restantes = (vencimento_alvo - hoje).days
+            vencimento_alvo = calcular_terceira_sexta(hoje.year, hoje.month + 1)
+            
+    # Lista oficial de feriados nacionais e da B3 (Exemplo focado em 2026)
+    # Adicione ou remova datas conforme o ano corrente
+    feriados = [
+        '2026-01-01',  # Confraternização Universal
+        '2026-02-16',  # Carnaval
+        '2026-02-17',  # Carnaval
+        '2026-04-03',  # Sexta-feira Santa
+        '2026-04-21',  # Tiradentes
+        '2026-05-01',  # Dia do Trabalho
+        '2026-06-04',  # Corpus Christi
+        '2026-07-09',  # Data Magna de SP (Feriado B3)
+        '2026-09-07',  # Independência do Brasil
+        '2026-10-12',  # Nossa Sra. Aparecida
+        '2026-11-02',  # Finados
+        '2026-11-15',  # Proclamação da República
+        '2026-11-20',  # Dia da Consciência Negra
+        '2026-12-25',  # Natal
+    ]
     
-    return vencimento_alvo, dias_restantes
+    # Converte os feriados para o formato aceito pelo NumPy
+    feriados_np = np.array(feriados, dtype='datetime64[D]')
+    
+    # Converte as datas limites para o formato NumPy
+    data_inicio = np.datetime64(hoje)
+    data_fim = np.datetime64(vencimento_alvo)
+    
+    # Calcula os dias úteis (exclui finais de semana e feriados listados)
+    # Nota: O np.busday_count por padrão não inclui a data final no cálculo.
+    dias_uteis = np.busday_count(data_inicio, data_fim, holidays=feriados_np)
+    
+    return vencimento_alvo, dias_uteis
 
 # Execução do script
-data_vencimento, dias_faltam = dias_ate_proximo_vencimento()
+data_vencimento, dias_uteis_faltam = dias_uteis_ate_proximo_vencimento()
+
 venc_opc1=f"Próximo vencimento de opções: {data_vencimento.strftime('%d/%m/%Y')}"
-venc_opc2=f"Faltam exatamente: {dias_faltam} dias"
+venc_opc2=f"Faltam exatamente: {dias_uteis_faltam} dias úteis"
+
+# mensagem para o Telegram
+
 
 MESSAGE = df_string
 
