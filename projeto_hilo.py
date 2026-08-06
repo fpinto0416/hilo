@@ -168,7 +168,7 @@ def dias_ate_proximo_vencimento():
 # Execução do script
 data_vencimento, dias_faltam = dias_ate_proximo_vencimento()
 venc_opc1=f"Próximo vencimento de opções: {data_vencimento.strftime('%d/%m/%Y')}"
-venc_opc2="Faltam exatamente: {dias_faltam} dias"
+venc_opc2=f"Faltam exatamente: {dias_faltam} dias"
 
 MESSAGE = df_string
 
