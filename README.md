@@ -28,6 +28,14 @@ seguinte do mesmo ticker — não há horizonte fixo, é holding-period return.
 python resultados.py
 ```
 
+A aba `resumo` traz, por grupo (`geral`, `ordem_Compra`, `ordem_Venda`):
+`acerto`, `retorno_medio`, `retorno_total`, `profit_factor` (soma dos
+ganhos / soma das perdas em módulo — >1 significa que ganhos pesam mais
+que perdas) e `esperanca_matematica`
+(`acerto*ganho_medio - (1-acerto)*|perda_media|`, retorno esperado por
+trade — numericamente igual a `retorno_medio`, mas decompõe em taxa de
+acerto × tamanho de ganho/perda).
+
 Ressalva: histórico começou em 2026-07-30 — amostra ainda pequena, tratar
 como acompanhamento de tendência, não conclusão.
 

@@ -17,6 +17,7 @@ Output:
 from pathlib import Path
 from datetime import date
 
+import numpy as np
 import pandas as pd
 
 PASTA     = Path(__file__).parent
@@ -71,24 +72,41 @@ def _trades(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     return pd.DataFrame(fechados), pd.DataFrame(abertos)
 
 
+# ── Métricas padrão de avaliação de sinal ─────────────────────────────────────
+
+def _metricas(retornos: pd.Series) -> dict:
+    """acerto, retorno médio/total, profit factor (soma dos ganhos / soma das
+    perdas em módulo — >1 significa que ganhos pesam mais que perdas) e
+    esperança matemática (acerto*ganho_médio - (1-acerto)*|perda_média| —
+    retorno esperado por trade; equivalente a retorno_medio, mas decompõe em
+    taxa de acerto × tamanho de ganho/perda, que é o que costuma explicar
+    *por que* deu negativo)."""
+    ganhos = retornos[retornos > 0]
+    perdas = retornos[retornos <= 0]
+    acerto = float((retornos > 0).mean())
+    ganho_medio = float(ganhos.mean()) if len(ganhos) else 0.0
+    perda_media = float(perdas.mean()) if len(perdas) else 0.0  # já <= 0
+    soma_perdas = float(perdas.sum())
+    profit_factor = (float(ganhos.sum()) / abs(soma_perdas)) if soma_perdas != 0 else np.nan
+    esperanca = acerto * ganho_medio + (1 - acerto) * perda_media
+    return {
+        "n":                    len(retornos),
+        "acerto":               round(acerto, 3),
+        "retorno_medio":        round(float(retornos.mean()), 4),
+        "retorno_total":        round(float(retornos.sum()), 4),
+        "ganho_medio":          round(ganho_medio, 4),
+        "perda_media":          round(perda_media, 4),
+        "profit_factor":        round(profit_factor, 3) if pd.notna(profit_factor) else np.nan,
+        "esperanca_matematica": round(float(esperanca), 4),
+    }
+
+
 def _resumo(df_fechados: pd.DataFrame) -> pd.DataFrame:
     if df_fechados.empty:
         return pd.DataFrame()
-    linhas = [{
-        "grupo":         "geral",
-        "n":             len(df_fechados),
-        "acerto":        round(float(df_fechados["acerto"].mean()), 3),
-        "retorno_medio": round(float(df_fechados["retorno"].mean()), 4),
-        "retorno_total": round(float(df_fechados["retorno"].sum()), 4),
-    }]
+    linhas = [{"grupo": "geral", **_metricas(df_fechados["retorno"])}]
     for ordem, sub in df_fechados.groupby("ordem"):
-        linhas.append({
-            "grupo":         f"ordem_{ordem}",
-            "n":             len(sub),
-            "acerto":        round(float(sub["acerto"].mean()), 3),
-            "retorno_medio": round(float(sub["retorno"].mean()), 4),
-            "retorno_total": round(float(sub["retorno"].sum()), 4),
-        })
+        linhas.append({"grupo": f"ordem_{ordem}", **_metricas(sub["retorno"])})
     return pd.DataFrame(linhas)
 
 
@@ -104,12 +122,13 @@ def main() -> None:
     if len(df_fechados) < N_MIN_AMOSTRA:
         print(f"AVISO: amostra pequena (N={len(df_fechados)} < {N_MIN_AMOSTRA}) "
               f"— acompanhar tendência, não tirar conclusão.")
-    if not df_fechados.empty:
-        print(f"Acerto: {df_fechados['acerto'].mean():.1%}  |  "
-              f"retorno médio: {df_fechados['retorno'].mean():.2%}  |  "
-              f"retorno total: {df_fechados['retorno'].sum():.2%}")
-
     df_resumo = _resumo(df_fechados)
+    if not df_resumo.empty:
+        geral = df_resumo[df_resumo["grupo"] == "geral"].iloc[0]
+        print(f"Acerto: {geral['acerto']:.1%}  |  retorno médio: {geral['retorno_medio']:.2%}  |  "
+              f"retorno total: {geral['retorno_total']:.2%}  |  "
+              f"profit factor: {geral['profit_factor']:.2f}  |  "
+              f"esperança matemática: {geral['esperanca_matematica']:.2%}/trade")
     with pd.ExcelWriter(SAIDA, engine="openpyxl") as writer:
         df_fechados.to_excel(writer, sheet_name="trades_fechados", index=False)
         df_abertos.to_excel(writer, sheet_name="posicoes_abertas", index=False)
