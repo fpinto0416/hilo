@@ -1,0 +1,40 @@
+name: Hilo - Resultados (sob demanda)
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hilo-resultados
+  cancel-in-progress: false
+
+jobs:
+  resultados:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependencias
+        run: pip install pandas openpyxl
+
+      - name: Rodar resultados.py
+        run: python resultados.py
+
+      - name: Commit e push dos resultados
+        run: |
+          git config user.name "hilo-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add resultados
+          git diff --cached --quiet || git commit -m "Hilo: resultados $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git push
