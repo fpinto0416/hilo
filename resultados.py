@@ -75,12 +75,11 @@ def _trades(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
 # ── Métricas padrão de avaliação de sinal ─────────────────────────────────────
 
 def _metricas(retornos: pd.Series) -> dict:
-    """acerto, retorno médio/total, profit factor (soma dos ganhos / soma das
-    perdas em módulo — >1 significa que ganhos pesam mais que perdas) e
-    esperança matemática (acerto*ganho_médio - (1-acerto)*|perda_média| —
-    retorno esperado por trade; equivalente a retorno_medio, mas decompõe em
-    taxa de acerto × tamanho de ganho/perda, que é o que costuma explicar
-    *por que* deu negativo)."""
+    """acerto, retorno médio/total, ganho/perda médios e profit factor (soma
+    dos ganhos / soma das perdas em módulo — >1 significa que ganhos pesam
+    mais que perdas). Esperança matemática não entra aqui: com trades de
+    tamanho uniforme (1 unidade por sinal, sem position sizing), ela é
+    idêntica a retorno_medio — reportar as duas seria redundante."""
     ganhos = retornos[retornos > 0]
     perdas = retornos[retornos <= 0]
     acerto = float((retornos > 0).mean())
@@ -88,16 +87,14 @@ def _metricas(retornos: pd.Series) -> dict:
     perda_media = float(perdas.mean()) if len(perdas) else 0.0  # já <= 0
     soma_perdas = float(perdas.sum())
     profit_factor = (float(ganhos.sum()) / abs(soma_perdas)) if soma_perdas != 0 else np.nan
-    esperanca = acerto * ganho_medio + (1 - acerto) * perda_media
     return {
-        "n":                    len(retornos),
-        "acerto":               round(acerto, 3),
-        "retorno_medio":        round(float(retornos.mean()), 4),
-        "retorno_total":        round(float(retornos.sum()), 4),
-        "ganho_medio":          round(ganho_medio, 4),
-        "perda_media":          round(perda_media, 4),
-        "profit_factor":        round(profit_factor, 3) if pd.notna(profit_factor) else np.nan,
-        "esperanca_matematica": round(float(esperanca), 4),
+        "n":             len(retornos),
+        "acerto":        round(acerto, 3),
+        "retorno_medio": round(float(retornos.mean()), 4),
+        "retorno_total": round(float(retornos.sum()), 4),
+        "ganho_medio":   round(ganho_medio, 4),
+        "perda_media":   round(perda_media, 4),
+        "profit_factor": round(profit_factor, 3) if pd.notna(profit_factor) else np.nan,
     }
 
 
@@ -127,8 +124,7 @@ def main() -> None:
         geral = df_resumo[df_resumo["grupo"] == "geral"].iloc[0]
         print(f"Acerto: {geral['acerto']:.1%}  |  retorno médio: {geral['retorno_medio']:.2%}  |  "
               f"retorno total: {geral['retorno_total']:.2%}  |  "
-              f"profit factor: {geral['profit_factor']:.2f}  |  "
-              f"esperança matemática: {geral['esperanca_matematica']:.2%}/trade")
+              f"profit factor: {geral['profit_factor']:.2f}")
     with pd.ExcelWriter(SAIDA, engine="openpyxl") as writer:
         df_fechados.to_excel(writer, sheet_name="trades_fechados", index=False)
         df_abertos.to_excel(writer, sheet_name="posicoes_abertas", index=False)
