@@ -112,6 +112,26 @@ for ativo, valor in Ativo_hilo.items():
     except Exception as e:
         print(f"Erro ao processar {ticker}: {e}")
     
+# Log diario completo (2026-08-19): 1 linha por ticker/dia, sempre --
+# nao so quando a posicao troca. historico_ordens.xlsx (abaixo) so grava
+# troca de posicao, entao nao dava pra marcar a mercado uma posicao que
+# continua aberta sem buscar cotacao de fora do repo -- historico_diario.xlsx
+# resolve isso pro resultados.py, no mesmo espirito do memoria_ordens.csv do
+# api_OMQS (log diario completo, independente de mudar ou nao).
+df_diario = df_final.copy()
+df_diario['ordem'] = np.where(df_diario['posicao'] == 1, 'Compra',
+                       np.where(df_diario['posicao'] == -1, 'Venda', 'NEUTRO'))
+df_diario['data'] = hoje
+df_diario = df_diario[['data', 'ticker', 'price', 'hilo', 'ordem']]
+
+HISTORICO_DIARIO_PATH = "historico_diario.xlsx"
+if os.path.exists(HISTORICO_DIARIO_PATH):
+    df_hd = pd.read_excel(HISTORICO_DIARIO_PATH)
+    df_hd = pd.concat([df_hd, df_diario], ignore_index=True)
+else:
+    df_hd = df_diario.copy()
+df_hd.to_excel(HISTORICO_DIARIO_PATH, index=False)
+
 df_final=df_final[df_final['change'] == 1]
 df_final['ordem']=np.where(df_final['posicao']==1,'Compra','Venda')
 df_final['data']=hoje
