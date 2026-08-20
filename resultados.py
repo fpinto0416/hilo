@@ -123,9 +123,12 @@ def _mtm_abertas(df_abertos: pd.DataFrame) -> pd.DataFrame:
 def _metricas(retornos: pd.Series) -> dict:
     """acerto, retorno médio/total, ganho/perda médios e profit factor (soma
     dos ganhos / soma das perdas em módulo — >1 significa que ganhos pesam
-    mais que perdas). Esperança matemática não entra aqui: com trades de
-    tamanho uniforme (1 unidade por sinal, sem position sizing), ela é
-    idêntica a retorno_medio — reportar as duas seria redundante."""
+    mais que perdas). `retorno_medio` É o resultado esperado por operação
+    (esperança matemática) -- com trades de tamanho uniforme (1 unidade por
+    sinal, sem position sizing), esperança = acerto*ganho_medio +
+    (1-acerto)*perda_media é algebricamente idêntico à média simples dos
+    retornos, então não vira campo separado (reportar as duas seria
+    redundante); só a leitura/rótulo muda conforme o contexto (20/08)."""
     ganhos = retornos[retornos > 0]
     perdas = retornos[retornos <= 0]
     acerto = float((retornos > 0).mean())
@@ -192,9 +195,9 @@ def main() -> None:
         if linha.empty:
             return
         g = linha.iloc[0]
-        print(f"{rotulo}: acerto {g['acerto']:.1%}  |  retorno médio {g['retorno_medio']:.2%}  |  "
-              f"retorno total {g['retorno_total']:.2%}  |  profit factor {g['profit_factor']:.2f}  "
-              f"(N={int(g['n'])})")
+        print(f"{rotulo}: acerto {g['acerto']:.1%}  |  resultado esperado por operação "
+              f"{g['retorno_medio']:.2%}  |  retorno total {g['retorno_total']:.2%}  |  "
+              f"profit factor {g['profit_factor']:.2f}  (N={int(g['n'])})")
 
     print()
     print("AVISO: 'fechados' sozinho é enviesado pra baixo -- uma posição só fecha quando o HiLo")
