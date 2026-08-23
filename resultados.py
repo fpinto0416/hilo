@@ -80,6 +80,7 @@ def _trades(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
                 "preco_saida":   float(saida["price"]),
                 "retorno":       round(float(ret), 4),
                 "acerto":        int(ret > 0),
+                "duracao_dias":  (saida["data"].date() - entrada["data"].date()).days,
             })
         ultima = sub.iloc[-1]
         abertos.append({
@@ -105,8 +106,10 @@ def _mtm_abertas(df_abertos: pd.DataFrame) -> pd.DataFrame:
         df_diario = pd.read_excel(HISTORICO_DIARIO)
         df_diario["data"] = pd.to_datetime(df_diario["data"])
         ultimo_preco = df_diario.sort_values("data").groupby("ticker")["price"].last()
+        ultima_data  = df_diario["data"].max().date()
     else:
         ultimo_preco = pd.Series(dtype=float)
+        ultima_data  = None
     preco_atual = out["ticker"].map(ultimo_preco)
     out["preco_atual"] = preco_atual
     lado = np.where(out["ordem"] == "Compra", 1, -1)
@@ -115,12 +118,18 @@ def _mtm_abertas(df_abertos: pd.DataFrame) -> pd.DataFrame:
         (lado * (preco_atual / out["preco_entrada"] - 1)).round(4),
         np.nan,
     )
+    # duracao_dias aqui é dias em aberto ATÉ AGORA (censurada, pedido 23/08) --
+    # a posição pode continuar aberta, não é a duração final.
+    out["duracao_dias"] = (
+        out["data_entrada"].apply(lambda d: (ultima_data - d).days) if ultima_data is not None
+        else np.nan
+    )
     return out
 
 
 # ── Métricas padrão de avaliação de sinal ─────────────────────────────────────
 
-def _metricas(retornos: pd.Series) -> dict:
+def _metricas(retornos: pd.Series, duracoes: pd.Series | None = None) -> dict:
     """acerto, retorno médio/total, ganho/perda médios (e mín/máx de cada
     lado, pedido 23/08) e profit factor (soma dos ganhos / soma das perdas
     em módulo — >1 significa que ganhos pesam mais que perdas).
@@ -133,7 +142,11 @@ def _metricas(retornos: pd.Series) -> dict:
     ganho_maximo/ganho_minimo = melhor/pior trade vencedor; perda_maxima =
     pior trade (mais negativo); perda_minima = perda mais leve (mais perto
     de zero) -- convenção de trading: "máxima" é sempre o valor mais extremo
-    em módulo daquele lado, não o maior número."""
+    em módulo daquele lado, não o maior número.
+    duracoes (opcional, pedido 23/08) -- Series de duração em dias alinhada
+    por índice com `retornos`; se passada, calcula duracao_media_ganho/perda
+    (dias médios em cada lado). Pra abertas_mtm a duração é censurada (dias
+    até agora, a posição pode continuar aberta), não a duração final."""
     ganhos = retornos[retornos > 0]
     perdas = retornos[retornos <= 0]
     acerto = float((retornos > 0).mean())
@@ -141,7 +154,7 @@ def _metricas(retornos: pd.Series) -> dict:
     perda_media = float(perdas.mean()) if len(perdas) else 0.0  # já <= 0
     soma_perdas = float(perdas.sum())
     profit_factor = (float(ganhos.sum()) / abs(soma_perdas)) if soma_perdas != 0 else np.nan
-    return {
+    resultado = {
         "n":             len(retornos),
         "acerto":        round(acerto, 3),
         "retorno_medio": round(float(retornos.mean()), 4),
@@ -154,6 +167,12 @@ def _metricas(retornos: pd.Series) -> dict:
         "perda_minima":  round(float(perdas.max()), 4) if len(perdas) else np.nan,
         "profit_factor": round(profit_factor, 3) if pd.notna(profit_factor) else np.nan,
     }
+    if duracoes is not None:
+        dur_ganho = duracoes.loc[ganhos.index]
+        dur_perda = duracoes.loc[perdas.index]
+        resultado["duracao_media_ganho"] = round(float(dur_ganho.mean()), 1) if len(dur_ganho) else np.nan
+        resultado["duracao_media_perda"] = round(float(dur_perda.mean()), 1) if len(dur_perda) else np.nan
+    return resultado
 
 
 def _resumo_grupo(sub: pd.DataFrame, prefixo: str) -> list[dict]:
@@ -164,9 +183,11 @@ def _resumo_grupo(sub: pd.DataFrame, prefixo: str) -> list[dict]:
     sub = sub.dropna(subset=["retorno"]) if "retorno" in sub.columns else sub
     if sub.empty:
         return []
-    linhas = [{"grupo": prefixo, **_metricas(sub["retorno"])}]
+    dur = sub["duracao_dias"] if "duracao_dias" in sub.columns else None
+    linhas = [{"grupo": prefixo, **_metricas(sub["retorno"], dur)}]
     for ordem, g in sub.groupby("ordem"):
-        linhas.append({"grupo": f"{prefixo}_{ordem.lower()}", **_metricas(g["retorno"])})
+        g_dur = g["duracao_dias"] if "duracao_dias" in g.columns else None
+        linhas.append({"grupo": f"{prefixo}_{ordem.lower()}", **_metricas(g["retorno"], g_dur)})
     return linhas
 
 
@@ -175,7 +196,7 @@ def _resumo(df_fechados: pd.DataFrame, df_abertos_mtm: pd.DataFrame) -> pd.DataF
     linhas += _resumo_grupo(df_fechados, "fechados")
     linhas += _resumo_grupo(df_abertos_mtm, "abertas_mtm")
 
-    cols = ["ordem", "retorno"]
+    cols = ["ordem", "retorno", "duracao_dias"]
     partes = [d[cols] for d in (df_fechados, df_abertos_mtm) if not d.empty]
     combinado = pd.concat(partes, ignore_index=True) if partes else pd.DataFrame(columns=cols)
     linhas += _resumo_grupo(combinado, "combinado")
