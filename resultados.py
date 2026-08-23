@@ -121,14 +121,19 @@ def _mtm_abertas(df_abertos: pd.DataFrame) -> pd.DataFrame:
 # ── Métricas padrão de avaliação de sinal ─────────────────────────────────────
 
 def _metricas(retornos: pd.Series) -> dict:
-    """acerto, retorno médio/total, ganho/perda médios e profit factor (soma
-    dos ganhos / soma das perdas em módulo — >1 significa que ganhos pesam
-    mais que perdas). `retorno_medio` É o resultado esperado por operação
-    (esperança matemática) -- com trades de tamanho uniforme (1 unidade por
-    sinal, sem position sizing), esperança = acerto*ganho_medio +
-    (1-acerto)*perda_media é algebricamente idêntico à média simples dos
-    retornos, então não vira campo separado (reportar as duas seria
-    redundante); só a leitura/rótulo muda conforme o contexto (20/08)."""
+    """acerto, retorno médio/total, ganho/perda médios (e mín/máx de cada
+    lado, pedido 23/08) e profit factor (soma dos ganhos / soma das perdas
+    em módulo — >1 significa que ganhos pesam mais que perdas).
+    `retorno_medio` É o resultado esperado por operação (esperança
+    matemática) -- com trades de tamanho uniforme (1 unidade por sinal, sem
+    position sizing), esperança = acerto*ganho_medio + (1-acerto)*perda_media
+    é algebricamente idêntico à média simples dos retornos, então não vira
+    campo separado (reportar as duas seria redundante); só a leitura/rótulo
+    muda conforme o contexto (20/08).
+    ganho_maximo/ganho_minimo = melhor/pior trade vencedor; perda_maxima =
+    pior trade (mais negativo); perda_minima = perda mais leve (mais perto
+    de zero) -- convenção de trading: "máxima" é sempre o valor mais extremo
+    em módulo daquele lado, não o maior número."""
     ganhos = retornos[retornos > 0]
     perdas = retornos[retornos <= 0]
     acerto = float((retornos > 0).mean())
@@ -143,6 +148,10 @@ def _metricas(retornos: pd.Series) -> dict:
         "retorno_total": round(float(retornos.sum()), 4),
         "ganho_medio":   round(ganho_medio, 4),
         "perda_media":   round(perda_media, 4),
+        "ganho_maximo":  round(float(ganhos.max()), 4) if len(ganhos) else np.nan,
+        "ganho_minimo":  round(float(ganhos.min()), 4) if len(ganhos) else np.nan,
+        "perda_maxima":  round(float(perdas.min()), 4) if len(perdas) else np.nan,
+        "perda_minima":  round(float(perdas.max()), 4) if len(perdas) else np.nan,
         "profit_factor": round(profit_factor, 3) if pd.notna(profit_factor) else np.nan,
     }
 
