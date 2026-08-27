@@ -52,6 +52,20 @@ opcoes-sinal-diario e api_OMQS_futuros. É HTML estático — os números são
 colados à mão a cada atualização, seguindo o comentário HTML antes do
 card.
 
+## Incidente 26/08: cron do GitHub Actions sumiu (não é bug daqui)
+
+`daily-hilo.yml` (21:30 UTC / 18:30 BRT) não disparou em 26/08 — não
+atrasou, não falhou, sumiu da fila do `on: schedule` inteiro (`gh run
+list` sem run pro dia). Backfillado via `workflow_dispatch` manual no
+mesmo dia. **Mesmo incidente em pelo menos +4 workflows de outros repos
+do usuário na mesma janela ~21:30-22:11 UTC** (mia_telegram, api_OMQS,
+api_OMQS_futuros, acoes_fundamentalista) — forte indício de falha da fila
+do GitHub Actions, não bug de código. Se os números do card "Hilo"
+parecerem defasados, checar `gh run list` por um dia útil inteiro ausente
+antes de investigar código — a ausência total do cron não dispara e-mail
+de alerta (só `conclusion: failure` dispara, e essa run nem chega a
+existir).
+
 ## Estrutura
 
 Ver `README.md`, seção "Arquivos", pra lista completa.
