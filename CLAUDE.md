@@ -66,6 +66,24 @@ antes de investigar código — a ausência total do cron não dispara e-mail
 de alerta (só `conclusion: failure` dispara, e essa run nem chega a
 existir).
 
+## Continua no GitHub-hosted (não migrou pro runner próprio, 28/08)
+
+Os outros 5 repos de sinal (mia_telegram, api_OMQS, api_OMQS_futuros,
+acoes_fundamentalista, opcoes-sinal-diario) migraram pra um runner
+próprio numa VPS dedicada depois de dias seguidos de atraso grave na
+fila compartilhada do GitHub Actions — ver `omqs_futuros_5tf/CLAUDE.md`
+pro relato completo. **Este repo ficou de fora de propósito**: usa
+Chrome/Selenium (`browser-actions/setup-chrome`) pra raspar o
+TradingView, bem mais pesado de RAM que os outros (que são só
+pandas/requests) — a VPS é de 1GB e rodar Chrome ao lado de outros
+runners tinha risco real de falta de memória. Decisão: manter aqui, já
+que é job 1x/dia EOD — um atraso de horas na fila do GitHub não perde
+dado de verdade (diferente da captura intradiária do omqs_futuros_5tf,
+que é o que motivou a migração dos outros). Se esse repo também começar
+a ficar 1 dia inteiro sem rodar (não só atrasado), vale reconsiderar —
+nesse caso, aumentar a VPS pra 2GB antes de migrar o Chrome pra lá
+também.
+
 ## Estrutura
 
 Ver `README.md`, seção "Arquivos", pra lista completa.
