@@ -127,6 +127,11 @@ df_diario = df_diario[['data', 'ticker', 'price', 'hilo', 'ordem']]
 HISTORICO_DIARIO_PATH = "historico_diario.xlsx"
 if os.path.exists(HISTORICO_DIARIO_PATH):
     df_hd = pd.read_excel(HISTORICO_DIARIO_PATH)
+    # substitui as linhas de 'hoje' em vez de só concatenar -- se o
+    # workflow rodar 2x no mesmo dia (rerun manual, ou uma rodada
+    # agendada disparando bem atrasada), evita duplicar cada ticker
+    # (aconteceu de verdade em 27/08, causou 29 linhas duplicadas).
+    df_hd = df_hd[df_hd["data"] != hoje]
     df_hd = pd.concat([df_hd, df_diario], ignore_index=True)
 else:
     df_hd = df_diario.copy()
@@ -145,6 +150,10 @@ HISTORICO_PATH = "historico_ordens.xlsx"
 if not df_send.empty:
     if os.path.exists(HISTORICO_PATH):
         df_historico = pd.read_excel(HISTORICO_PATH)
+        # mesmo motivo do historico_diario acima: substitui a troca de
+        # 'hoje' por ticker em vez de só concatenar, pra não duplicar se
+        # o workflow rodar 2x no mesmo dia.
+        df_historico = df_historico[~((df_historico["data"] == hoje) & (df_historico["ticker"].isin(df_send["ticker"])))]
         df_historico = pd.concat([df_historico, df_send], ignore_index=True)
     else:
         df_historico = df_send.copy()
