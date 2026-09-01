@@ -35,11 +35,45 @@ acompanhamento de tendência, não conclusão fechada.
 
 ## Automação
 
-- `.github/workflows/daily-hilo.yml` — seg-sex, 21:30 UTC (~18:30 BRT).
+- `.github/workflows/daily-hilo.yml` — seg-sex, ~18:30 BRT via cron da
+  VPS (ver seção "Roda em runner próprio" abaixo — não tem mais
+  `on:schedule` nativo do GitHub).
 - `.github/workflows/hilo_resultados.yml` — só disparo manual.
 
-Secrets necessários: `TV_USERNAME`/`TV_PASSWORD` (TradingView, fallback de
-preço), `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`.
+Secrets necessários: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`. (Até 01/09
+também precisava de `TV_USERNAME`/`TV_PASSWORD` — não mais, ver seção
+"OHLC de hoje" abaixo.)
+
+## OHLC de hoje: TradingView trocado por estimativa via yfinance 1h (01/09)
+
+Pedido do usuário: parar de depender do TradingView pro dia corrente e
+usar só yfinance como fonte, mesmo rodando durante o pregão. Antes,
+`importar_tradingview()` pegava o candle diário "ao vivo" do TradingView
+(via `tvDatafeed`, precisa de `TV_USERNAME`/`TV_PASSWORD`) pra completar
+o "hoje" que o `yf.download(..., end=hoje)` não traz (yfinance só publica
+o candle diário depois que a B3 fecha e o Yahoo processa). Agora
+`estimar_ohlc_intraday()` baixa candles de **1h** do yfinance
+(`period="5d", interval="1h"`) e agrega manualmente: Open = abertura do
+1º candle de 1h do dia, High/Low = máx/mín entre os candles já fechados,
+Close = fechamento do candle de 1h mais recente disponível. Roda perto do
+fechamento (18:30 BRT, inalterado) pra minimizar a diferença entre essa
+estimativa e o fechamento oficial.
+
+Achado durante o teste (validado com dado real antes de publicar): o
+próprio candle diário "oficial" do yfinance pro dia mais recente às vezes
+vem com Open/High/Low/Volume zerados (só Close preenchido) — a agregação
+por 1h contorna isso de graça, além de resolver a dependência do
+TradingView. `tradingview-datafeed` removido de `requirements.txt`.
+
+## Chrome/ChromeDriver do workflow era peso morto (removido 01/09)
+
+O workflow instalava Chrome + ChromeDriver (`browser-actions/setup-chrome`)
+mas **nada no código usa Selenium** — nem `projeto_hilo.py`, nem
+`resultados.py`, nem `requirements.txt` (só tinha `tradingview-datafeed`,
+que é a lib `tvDatafeed`, baseada em WebSocket, não em browser). Esse
+passo nunca teve função real — era o motivo citado (errado) pra manter
+este repo fora da migração pro runner próprio dos outros 6 (ver seção
+abaixo). Removido do workflow.
 
 ## Painel de Sinais (artefato compartilhado)
 
@@ -66,23 +100,28 @@ antes de investigar código — a ausência total do cron não dispara e-mail
 de alerta (só `conclusion: failure` dispara, e essa run nem chega a
 existir).
 
-## Continua no GitHub-hosted (não migrou pro runner próprio, 28/08)
+## Roda em runner próprio (não GitHub-hosted) desde 01/09
 
-Os outros 5 repos de sinal (mia_telegram, api_OMQS, api_OMQS_futuros,
-acoes_fundamentalista, opcoes-sinal-diario) migraram pra um runner
-próprio numa VPS dedicada depois de dias seguidos de atraso grave na
-fila compartilhada do GitHub Actions — ver `omqs_futuros_5tf/CLAUDE.md`
-pro relato completo. **Este repo ficou de fora de propósito**: usa
-Chrome/Selenium (`browser-actions/setup-chrome`) pra raspar o
-TradingView, bem mais pesado de RAM que os outros (que são só
-pandas/requests) — a VPS é de 1GB e rodar Chrome ao lado de outros
-runners tinha risco real de falta de memória. Decisão: manter aqui, já
-que é job 1x/dia EOD — um atraso de horas na fila do GitHub não perde
-dado de verdade (diferente da captura intradiária do omqs_futuros_5tf,
-que é o que motivou a migração dos outros). Se esse repo também começar
-a ficar 1 dia inteiro sem rodar (não só atrasado), vale reconsiderar —
-nesse caso, aumentar a VPS pra 2GB antes de migrar o Chrome pra lá
-também.
+Os outros 5 repos de sinal migraram em 28/08 (fila compartilhada do
+GitHub Actions atrasando rodadas — ver `omqs_futuros_5tf/CLAUDE.md`).
+**Este repo ficou de fora até 01/09** pela suposição (equivocada — ver
+seção acima) de que o Chrome/Selenium do workflow pesava demais de RAM
+pra dividir a VPS de 1GB com os outros runners. Com o Chrome removido
+(nunca foi usado de verdade) e o TradingView saindo de cena no mesmo
+dia (OHLC de hoje agora vem só do yfinance), não sobrou motivo real pra
+manter fora — `daily-hilo.yml` passou a usar
+`runs-on: [self-hosted, self-hosted-hilo]` e `on:schedule` foi removido
+(mesmo padrão dos outros 6, ver `omqs_futuros_5tf/CLAUDE.md` sobre por
+que o schedule nativo do GitHub não é mais confiável). Gatilho real
+agora é o cron da VPS (`/etc/cron.d/gh-triggers`, ~18:30 BRT,
+inalterado). Setup do runner: mesmo procedimento dos outros 6 (registrar
+via `POST repos/{repo}/actions/runners/registration-token`, systemd,
+label `self-hosted-hilo`, override `Restart=on-failure`) — ver
+`omqs_futuros_5tf/CLAUDE.md` pro passo a passo completo.
+
+Se a fase de teste em produção (rodar via `workflow_dispatch` antes de
+confiar no cron) mostrar algum problema de RAM na VPS agora com 7 runners
+em vez de 6, essa é a hipótese a revisitar primeiro.
 
 ## Estrutura
 

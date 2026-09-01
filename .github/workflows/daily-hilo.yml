@@ -1,17 +1,28 @@
 name: Daily Python Job
 
 on:
-  schedule:
-    - cron: "30 21 * * 1-5"
-
-  workflow_dispatch:
+  # on:schedule removido em 01/09 -- provou ser fonte de risco, nao rede
+  # de seguranca, nos outros 6 repos migrados (ver
+  # omqs_futuros_5tf/CLAUDE.md). O cron da VPS (workflow_dispatch via gh
+  # workflow run) e o gatilho real agora.
+  workflow_dispatch: {}
 
 permissions:
   contents: write
 
+concurrency:
+  group: hilo-diario
+  cancel-in-progress: false
+
 jobs:
   run-script:
-    runs-on: ubuntu-latest
+    # Runner proprio (01/09) -- Chrome/Selenium nunca foi de fato usado
+    # pelo pipeline (era so um passo morto do workflow) e o TradingView
+    # saiu de cena no mesmo dia (projeto_hilo.py passou a estimar o OHLC
+    # de hoje via candles de 1h do yfinance) -- sem mais nenhum motivo
+    # pra manter este repo fora da VPS dedicada dos outros 6.
+    runs-on: [self-hosted, self-hosted-hilo]
+    timeout-minutes: 10
 
     steps:
       - name: Baixar código
@@ -28,22 +39,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Instalar Chrome e ChromeDriver
-        uses: browser-actions/setup-chrome@v2
-        with:
-          install-chromedriver: true
-
-      - name: Verificar Chrome e ChromeDriver
-        run: |
-          google-chrome --version || chrome --version || chromium --version
-          chromedriver --version
-
       - name: Rodar script
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          TV_USERNAME: ${{ secrets.TV_USERNAME }}
-          TV_PASSWORD: ${{ secrets.TV_PASSWORD }}
         run: python projeto_hilo.py
 
       - name: Salvar histórico de ordens

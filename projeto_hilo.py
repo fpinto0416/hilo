@@ -5,52 +5,60 @@ import numpy as np
 import requests
 import yfinance as yf
 import time
-from tvDatafeed import TvDatafeed, Interval
 import datetime
 
-TV_USERNAME = os.getenv("TV_USERNAME")
-TV_PASSWORD = os.getenv("TV_PASSWORD")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 #hoje = pd.to_datetime("2026-07-17").date()
 hoje = pd.to_datetime("today").date()
 hoje_string = hoje.strftime("%d-%m-%Y")
 
-tv = TvDatafeed(TV_USERNAME, TV_PASSWORD)
-
-def importar_tradingview(ticker, hoje = pd.to_datetime("today").date()):
+def estimar_ohlc_intraday(ticker, hoje):
+    """
+    Estimativa do OHLC de hoje a partir dos candles de 1h do yfinance --
+    substitui o candle diário do TradingView (01/09), que exigia
+    TV_USERNAME/TV_PASSWORD e uma fonte a parte. Agora tudo vem do
+    yfinance, só muda a granularidade (1h em vez de 1d) pro dia que
+    ainda não fechou: Open = abertura do 1º candle de 1h do dia, High/Low
+    = máximo/mínimo entre os candles já fechados, Close = fechamento do
+    candle de 1h mais recente disponível. Se rodar antes do fechamento
+    da B3, o Close aqui é o preço mais recente, não o fechamento oficial
+    -- roda perto do fechamento (18:30 BRT) pra minimizar essa diferença.
+    """
     tentativa = 0
-    while tentativa < 5:  # Tenta duas vezes antes de desistir
+    while tentativa < 5:
         try:
-
-            exchange = 'BMFBOVESPA'
-
-            df = tv.get_hist(ticker, exchange, interval=Interval.in_daily, n_bars=100)
-            df=df.drop(["symbol"], axis=1)
-            df = df.sort_values("datetime")
-            df.index.name = 'Date'
-            df.index = df.index.date
-            df = df.rename(columns={'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close','volume': 'Volume',})
-            
-            # tratar outliers
-            ret =df["Close"].pct_change()
-            med = ret.median()
-            mad = np.median(np.abs(ret - med))
-            z_robusto = 0.6745 * (ret - med) / mad
-            outlier = np.abs(z_robusto) > 8
-            df.loc[outlier, "Close"] = np.nan
-            df["Close"] = df["Close"].interpolate(method="linear")
- 
-            break  # Sai do loop se a requisição for bem-sucedida
+            df_1h = yf.download(ticker + ".SA", period="5d", interval="1h", progress=False)
+            if isinstance(df_1h.columns, pd.MultiIndex):
+                df_1h.columns = df_1h.columns.get_level_values(0)
+            df_1h.index = pd.to_datetime(df_1h.index)
+            df_hoje = df_1h[df_1h.index.date == hoje]
+            if df_hoje.empty:
+                # sem candle de 1h pra hoje ainda (fim de semana, feriado,
+                # ou rodou antes do 1º candle fechar) -- não é erro, só
+                # não tem "hoje" pra adicionar.
+                return pd.DataFrame(columns=["Open", "High", "Low", "Close", "Volume"])
+            ohlc = pd.DataFrame(
+                {
+                    "Open": [df_hoje["Open"].iloc[0]],
+                    "High": [df_hoje["High"].max()],
+                    "Low": [df_hoje["Low"].min()],
+                    "Close": [df_hoje["Close"].iloc[-1]],
+                    "Volume": [df_hoje["Volume"].sum()],
+                },
+                index=[hoje],
+            )
+            ohlc.index.name = "Date"
+            return ohlc
         except Exception as e:
-            print(f"Erro ao processar {ticker}: {e}")
+            print(f"Erro ao estimar OHLC intraday de {ticker}: {e}")
             tentativa += 1
             if tentativa < 5:
                 print(f"Tentando novamente em 15 segundos...")
                 time.sleep(15)
             else:
                 print(f"Falha definitiva para {ticker}, passando para o próximo.")
-    return df
+    return pd.DataFrame(columns=["Open", "High", "Low", "Close", "Volume"])
 
 df = pd.DataFrame()
 df_final= pd.DataFrame(columns=['ticker', 'price', 'hilo', 'posicao', 'change'])
@@ -95,13 +103,14 @@ for ativo, valor in Ativo_hilo.items():
         df.index = df.index.date
         df = df[df['Volume'] != 0]
 
-        df_tradingview = importar_tradingview(ticker, hoje)
-        df_tradingview = df_tradingview.loc[df_tradingview.index > df.index[-1]]
-        # Garante que as colunas fiquem na mesma ordem antes de concatenar
-        df_tradingview = df_tradingview[df.columns]
+        df_hoje_est = estimar_ohlc_intraday(ticker, hoje)
+        if not df_hoje_est.empty:
+            df_hoje_est = df_hoje_est.loc[df_hoje_est.index > df.index[-1]]
+            # Garante que as colunas fiquem na mesma ordem antes de concatenar
+            df_hoje_est = df_hoje_est[df.columns]
 
-        # Agora a concatenação será perfeita
-        df = pd.concat([df, df_tradingview])
+            # Agora a concatenação será perfeita
+            df = pd.concat([df, df_hoje_est])
         df["hi"]=df["High"].rolling(n_hilo).mean().shift(1).round(2)
         df["lo"]=df["Low"].rolling(n_hilo).mean().shift(1).round(2)
         df['sinal'] = np.where( df['Close'] > df['hi'],1,np.where(df['Close'] < df['lo'], -1, 0))

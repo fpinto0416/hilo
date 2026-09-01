@@ -40,6 +40,10 @@ como acompanhamento de tendência, não conclusão.
 
 Cadastrar em Settings → Secrets and variables → Actions:
 
-- `TV_USERNAME` / `TV_PASSWORD` (TradingView, usado como fallback de preço)
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_CHAT_ID`
+
+(Até 01/09 também precisava de `TV_USERNAME`/`TV_PASSWORD` pro
+TradingView, usado pra pegar o OHLC do dia corrente — substituído por
+uma estimativa via candles de 1h do yfinance, então esses secrets não
+são mais necessários.)
