@@ -119,9 +119,18 @@ via `POST repos/{repo}/actions/runners/registration-token`, systemd,
 label `self-hosted-hilo`, override `Restart=on-failure`) — ver
 `omqs_futuros_5tf/CLAUDE.md` pro passo a passo completo.
 
-Se a fase de teste em produção (rodar via `workflow_dispatch` antes de
-confiar no cron) mostrar algum problema de RAM na VPS agora com 7 runners
-em vez de 6, essa é a hipótese a revisitar primeiro.
+Migração concluída e testada em 01/09: runner `hilo-runner` registrado
+(label `self-hosted-hilo`), serviço systemd com override
+`Restart=on-failure`, teste via `workflow_dispatch` passou 100%
+(2 trocas de sinal do dia — BBAS3 Compra, PRIO3 Venda — Telegram enviado,
+`historico_diario.xlsx`/`historico_ordens.xlsx` commitados, tudo em
+~15s). Cron da VPS atualizado com a linha do hilo (18:30 BRT, mesmo
+horário de sempre). Secrets `TV_USERNAME`/`TV_PASSWORD` removidos do
+repo (sem uso nenhum mais).
+
+Se a VPS mostrar algum problema de RAM agora com 7 runners em vez de 6,
+essa é a hipótese a revisitar primeiro (ver
+`omqs_futuros_5tf/CLAUDE.md`, recomendação em aberto de subir pra 2GB).
 
 ## Estrutura
 
