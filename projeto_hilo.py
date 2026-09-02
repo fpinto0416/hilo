@@ -10,7 +10,11 @@ import datetime
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 #hoje = pd.to_datetime("2026-07-17").date()
-hoje = pd.to_datetime("today").date()
+# BRT, nao a hora do sistema (UTC no runner) -- mesmo achado do
+# acoes_fundamentalista: um rerun manual tarde da noite BRT (apos as
+# 21h) ja cai no dia seguinte em UTC, rotulando historico_diario.xlsx/
+# historico_ordens.xlsx com a data errada.
+hoje = pd.Timestamp.now(tz="America/Sao_Paulo").date()
 hoje_string = hoje.strftime("%d-%m-%Y")
 
 def estimar_ohlc_intraday(ticker, hoje):
