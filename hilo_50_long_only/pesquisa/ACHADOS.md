@@ -336,6 +336,70 @@ defensável só nos 3 nomes mais líquidos, e só executando perto do mid.
 Os números de §12.3 a §12.5 seguem valendo para os 6 ativos testados;
 o que mudou é que agora sabemos que ampliar não ajuda.
 
+### 12.8 RESULTADO DEFINITIVO — 50 ativos sobre o acervo (10/09/2026)
+
+Refeito por inteiro sobre `acervo-opcoes-b3`: **50 ativos, 2015–2026,
+2.396 pernas em 1.398 episódios** — 4× a amostra da versão de 6 ativos.
+Substitui §12.3 a §12.7 como número de referência.
+
+Método: sinal HiLo 50 long-only em preço ajustado; call ATM (delta
+mediano **0,560**, |ln(K/S)| mediano 0,004) do 1º vencimento mensal com
+>20 dias corridos, rolada a <10; **preço de mercado (`ultimo`) nas duas
+pontas**; delta por Black-Scholes com IV extraída do próprio preço;
+dimensionamento delta-equivalente (**w mediano 7,8%** do capital em
+prêmio, resto em CDI); ação paga 30 bps por episódio.
+
+**Carteira equal-weight, nos episódios cobertos:**
+
+| Execução | Call a.a. | Ação a.a. | Dif | Ativos em que a call ganha |
+|---|---|---|---|---|
+| mid-a-mid | **11,43%** | 6,61% | **+4,81 pp** | 45/50 |
+| p25 medido | 2,91% | 6,61% | −3,71 pp | 8/50 |
+| mediana medida | −2,66% | 6,61% | −9,28 pp | 3/50 |
+
+**Mas a comparação que decide é contra a estratégia COMPLETA em ação**
+(mesmos 50 ativos, mesmo período, sem exigir call negociável):
+
+| | Rent a.a. | Vol | Sharpe | Drawdown |
+|---|---|---|---|---|
+| **Ação long-only + CDI (completa)** | **14,39%** | 12,21 | 1,16 | −15,87% |
+| Call ATM rolada, a mid-a-mid | 11,43% | — | — | — |
+| Buy & hold | 15,17% | 24,21 | 0,71 | −48,52% |
+
+**Mesmo a custo zero a call perde da ação (11,43% contra 14,39%)**,
+porque só **58% dos episódios** (1.397 de 2.390) têm call ATM negociável
+com o vencimento certo — nos outros 42% a versão em call fica em CDI
+enquanto a ação está comprada. É o mesmo mecanismo do §12.7, atenuado
+mas não eliminado pelo universo maior.
+
+**Única exceção — os 3 nomes líquidos** (PETR4, VALE3, BOVA11, 261
+pernas), onde a call ganha de forma estatisticamente firme:
+
+| Execução | Dif por perna | p | Call ganha |
+|---|---|---|---|
+| mid | +1,383 pp | <0,0001 | 62,5% |
+| p25 medido | +0,831 pp | 0,0008 | 57,1% |
+| mediana medida | +0,175 pp | 0,43 | 49,8% |
+
+**Veredito:** comprar a ação vence comprar a call, no agregado e em
+qualquer nível de custo realista. A convexidade é real (+4,81 pp a mid,
+45/50 ativos) mas não cobre nem o pedágio nem o custo de ficar de fora
+de 42% dos sinais. Só faz sentido em PETR4/VALE3/BOVA11 e com execução
+no quartil bom.
+
+**Correção de método achada aqui:** a primeira passada usou `medio` (VWAP
+do dia) como preço de entrada da opção. O sinal do HiLo só é conhecido no
+**fechamento**, então comprar pelo VWAP é look-ahead — em dia de alta o
+VWAP fica abaixo do fechamento e barateia a call de graça. Trocado por
+`ultimo`. Valia **2,7 p.p. a.a.** de vantagem falsa (mid-a-mid caiu de
++7,47 para +4,81 pp). Um segundo look-ahead, no baseline em ação, dava
+54% a.a. com Sharpe 3,66 — sinal do dia aplicado ao retorno do próprio
+dia, sem defasar.
+
+**Não reportável:** vol e drawdown da versão em call. Exigem marcar a
+opção todo dia, e toda tentativa de marcar por modelo produziu artefato
+(vol anualizada de 82% a.a.).
+
 ### 12.7 A restrição de cobertura custa mais que a convexidade paga
 
 Nos 6 ativos, 2009–2026, mesma construção de carteira:
