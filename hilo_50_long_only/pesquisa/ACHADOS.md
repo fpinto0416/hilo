@@ -510,3 +510,72 @@ Filtro de dados aplicado: 25 pernas (0,7%) descartadas por evento
 societário — retorno do spot bruto do acervo divergindo >15 p.p. do
 ajustado, o que deixa o par strike/spot inconsistente e o intrínseco
 errado.
+
+
+### 12.10 Dimensionamento — o que está sendo comparado
+
+Ponto levantado em 10/09 e que não estava escrito: **a comparação não usa
+o mesmo montante financeiro nos dois lados.** Usa a mesma **exposição ao
+ativo** (delta-equivalente):
+
+- **Ação:** 100% do capital do sleeve comprado na ação.
+- **Opção:** `w = prêmio / (delta × spot)` do capital no prêmio — mediana
+  **8,2%** na call seca, **8,9%** na trava — e o restante rendendo CDI.
+
+Os dois lados começam com a mesma sensibilidade ao papel. Igualar o
+montante financeiro compararia exposições completamente diferentes.
+
+| Dimensionamento | Prêmio | Resultado |
+|---|---|---|
+| Mesmo montante financeiro | 100% do capital | **−97% a.a., vol 392%** |
+| **Delta-equivalente** (usado) | ~8% do capital, resto em CDI | §12.8/§12.9 |
+| Prêmio fixo do capital | a definir | não testado |
+
+Com `w` ≈ 8%, colocar todo o capital em prêmio é ~12× de alavancagem
+sobre o ativo — a ruína é aritmética, não azar.
+
+**O delta-equivalente favorece a opção**, e vale ter isso claro ao ler os
+resultados: ela começa com a mesma exposição mas perde no máximo o prêmio
+(~8% do sleeve), enquanto a ação carrega a queda inteira. A convexidade
+entra de graça na comparação — e mesmo assim a ação vence.
+
+### 12.11 Trava de alta (compra delta 50 / vende delta 15)
+
+Mesmas regras v2, trocando a call seca por spread vertical de mesmo
+vencimento. Delta de compra mediano 0,498, de venda 0,158, líquido 0,338.
+
+| | Call seca (§12.9) | **Trava** |
+|---|---|---|
+| Episódios cobertos | 83% | **72%** |
+| Pernas | 3.430 | 3.032 |
+| Prêmio líquido / spot | ~4,6% | **2,87%** |
+| Teto / prêmio | — | 3,6× |
+| **Mid-a-mid** | **17,32%** | **11,49%** |
+| **p25 do spread** | **4,08%** | **−7,19%** |
+| Mediana do spread | −4,06% | −17,69% |
+| Maior perna | +3.297% | +1.291% |
+| Liquidação (retorno médio) | +168% | +76,5% |
+
+**A trava é pior em tudo**, e perde da ação (14,39%) até a mid-a-mid.
+
+Três mecanismos, todos medidos:
+
+1. **O teto corta a cauda.** As pernas de liquidação eram o motor do
+   resultado da §12.9 (+168% em média); com teto de 3,6× caem para
+   +76,5%. Num sinal cuja assimetria de duração é 4,54× (§5) — segura
+   vencedor muito mais tempo que perdedor — limitar o ganho ataca
+   exatamente o que a estratégia faz de melhor.
+2. **O custo dobra sobre um prêmio menor.** Cruza-se spread nas duas
+   pernas, e o prêmio líquido é 2,87% do spot contra 4,6% da call seca.
+   O pedágio relativo explode: no p25 a trava vai a −7,19% contra +4,08%
+   da call seca.
+3. **A cobertura cai** de 83% para 72%, porque agora as **duas** pernas
+   precisam ter negociado. E `liquidacao_saida` — perna que morre sem
+   valor — dobra de 4,8% para 10,5% dos casos, com média de −87,3%.
+
+Exigir liquidez mínima nas duas pernas melhora o líquido (p25 sobe de
+−7,19% para 8,18% com ≥20 negócios) mas nunca chega aos 14,39% da ação, e
+custa cobertura.
+
+**Conclusão:** vender a perna de delta 15 financia parte do prêmio e cobra
+por isso justamente onde a estratégia ganha dinheiro. Não usar.
