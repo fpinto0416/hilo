@@ -725,3 +725,39 @@ Isso **não** reverte §12.8: no agregado de 50 ativos a call continua
 perdendo da estratégia completa em ação. E as ressalvas de §12.13 (o
 resultado depende de CDI ≥ ~8%) e §12.14 (o drawdown não é menor)
 continuam valendo integralmente para PETR4 e VALE3.
+
+### 12.16 A grade de prazo satura: a B3 não negocia call acima de ~90 dias
+
+`prazo_final.py` estende a grade de §12.12 até 180 dias e usa o drawdown
+**diário** (§12.14), não o de resolução de perna.
+
+| alvo | pernas | cob | dc med | rol/ep | mid | DD mid | p25 | DD p25 | mediana | ffill |
+|---|---|---|---|---|---|---|---|---|---|---|
+| v2 | 3.430 | 82% | 42 | 0,63 | 17,21% | −21,5% | 3,97% | −44,6% | −4,18% | 38,8% |
+| 30d | 3.538 | 82% | 38 | 0,68 | 17,26% | −21,2% | 3,89% | −44,4% | −4,34% | 37,5% |
+| 45d | 3.352 | 82% | 43 | 0,59 | 16,88% | −22,8% | 3,81% | −44,0% | −4,26% | 39,2% |
+| **60d** | 2.869 | 82% | 59 | 0,35 | 16,83% | −22,7% | 4,90% | −39,0% | −2,76% | 46,2% |
+| 90d | 2.801 | 81% | 63 | 0,32 | 17,23% | −21,4% | 5,16% | −38,4% | −2,56% | 48,4% |
+| 120d | 2.801 | 81% | 63 | 0,32 | 17,23% | −21,4% | 5,16% | −38,4% | −2,56% | 48,4% |
+| 180d | 2.801 | 81% | 63 | 0,32 | 17,23% | −21,4% | 5,16% | −38,4% | −2,56% | 48,4% |
+
+**90/120/180 são idênticos** porque saturam. Distribuição de prazo entre
+todos os contratos-dia que negociaram no acervo:
+
+```
+dc > 30:  57,72%
+dc > 60:  11,75%
+dc > 90:   0,00%    <- nada, nunca
+p99 de dc = 78 dias
+```
+
+**A B3 não negocia call acima de ~90 dias.** Pedir 120 ou 180 devolve o
+mesmo contrato de ~63 dias que pedir 90.
+
+**Conclusão: o melhor prazo é "o mais longo que negocia", e ele fica em
+60–63 dias.** O teto é do mercado, não da estratégia — a preocupação de
+"ótimo na borda da grade" estava certa na forma e errada na consequência.
+
+Mantido 60 e **não** 90, apesar de 90 dar p25 5,16% contra 4,90%: o ffill
+sobe de 46,2% para 48,4% dos dias de perna, então o ganho de 0,26 pp vem
+sobre dado quase metade interpolado. Ver a ressalva 2 de §12.14.
