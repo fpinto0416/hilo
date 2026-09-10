@@ -5,3 +5,5 @@ pesquisa/calls/res.pkl
 pesquisa/calls/pernas.csv
 __pycache__/
 *.pyc
+pesquisa/calls/acervo50/*.parquet
+pesquisa/calls/acervo50/*.csv
