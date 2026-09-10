@@ -761,3 +761,51 @@ mesmo contrato de ~63 dias que pedir 90.
 Mantido 60 e **não** 90, apesar de 90 dar p25 5,16% contra 4,90%: o ffill
 sobe de 46,2% para 48,4% dos dias de perna, então o ganho de 0,26 pp vem
 sobre dado quase metade interpolado. Ver a ressalva 2 de §12.14.
+
+### 12.17 CDI real do Banco Central: a premissa deixou de existir
+
+`pesquisa/calls/acervo50/cdi_real.py`, sobre `acervo-opcoes-b3/data/cdi`
+(SGS/BCB série 12, % ao dia, gravada como fator). Substitui o CDI fixo de
+10% a.a. que §12.13 apontou como a fraqueza declarada do estudo.
+
+**A taxa real equivalente de 2015 a 2026 é 10,00% a.a.** — o chute
+acertou a média. Mas os anos individuais não:
+
+```
+2015 13,4%   2016 14,1%   2017 10,1%   2018  6,5%
+2019  5,9%   2020  2,8%   2021  4,4%   2022 12,4%
+2023 13,2%   2024 10,8%   2025 14,3%   2026 14,5%
+```
+
+Refeito com a série real, marcando a mercado diariamente:
+
+| cenário | call | DD call | ação | DD ação | dif |
+|---|---|---|---|---|---|
+| **50 ativos** | | | | | |
+| mid — CDI 10% fixo | 17,21% | −21,5% | 11,00% | −18,2% | +6,21 |
+| mid — **CDI real** | 17,34% | −21,6% | 11,05% | −18,6% | +6,29 |
+| p25 — CDI 10% fixo | 3,97% | −44,6% | 11,00% | −18,2% | −7,04 |
+| p25 — **CDI real** | 4,09% | −41,3% | 11,05% | −18,6% | −6,96 |
+| mediana — **CDI real** | −4,07% | −62,0% | 11,05% | −18,6% | −15,13 |
+| **PETR4/VALE3/BOVA11** | | | | | |
+| mid — **CDI real** | 25,74% | −22,2% | 17,62% | −21,7% | +8,12 |
+| p25 — **CDI real** | 20,37% | −23,2% | 17,62% | −21,7% | +2,75 |
+| mediana — **CDI real** | 14,18% | −24,9% | 17,62% | −21,7% | −3,44 |
+
+**Nada muda materialmente** — as diferenças ficam em ~0,1 pp. A
+preocupação de §12.13 com o *timing* (o CDI baixo de 2020 coincidindo com
+o ano de maior movimento) era razoável e **não se confirmou**.
+
+O ganho não é o número, é o estatuto: a taxa passou de suposta a medida.
+§12.13 mostrou que a conclusão **mudaria** com CDI de 0% ou 5%; agora se
+sabe que o CDI realizado foi ~10% e a questão está fechada, em vez de
+depender de sorte.
+
+Ressalva que continua valendo: isso vale para o **período medido**. Uma
+repetição em regime de juro baixo prolongado — como 2019–2021, quando o
+CDI ficou abaixo de 6% por três anos — teria resultado bem pior para a
+call, porque é onde 92% do capital dela fica.
+
+**Nota de leitura:** o `fator_periodo` exclui o dia de entrada de
+propósito — quem compra no dia d não ganha o CDI de d. Creditar esse dia
+numa estratégia de 3.400 pernas não é arredondamento.
