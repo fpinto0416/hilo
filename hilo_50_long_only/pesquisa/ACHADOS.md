@@ -442,3 +442,71 @@ isso é ~15× de alavancagem sobre o ativo; a ruína é aritmética, não azar.
 **Baixa**
 7. Unificar o cálculo de esperança (`Expec_Mat_WF` usa fórmula
    reconstruída; o seletor usa média direta).
+
+
+### 12.9 Regras v2 — liquidação no vencimento (10/09/2026)
+
+Regras ajustadas a pedido: (1) ATM = strike negociado mais próximo, **sem
+tolerância**; (3) vencimento mensal com **>22 dias**, escolhendo entre os
+elegíveis o de **maior liquidez** no strike ATM, não o mais próximo;
+(4) rolar quando faltar <10 dias **e houver negócio**; não conseguindo,
+**levar à liquidação** — no vencimento o valor é o intrínseco
+`max(S−K,0)`, que não depende de existir comprador — e reentrar se o HiLo
+seguir comprado. Mesmo tratamento na saída do sinal.
+
+**A regra 4 é a que importa.** Ela ataca a perda que não era do desenho
+da estratégia e sim da microestrutura: contrato sem comprador no dia da
+saída.
+
+| | v1 | **v2** |
+|---|---|---|
+| Episódios cobertos | 58% | **83%** |
+| Pernas | 2.396 | **3.430** |
+| Call a mid-a-mid | 11,43% a.a. | **17,32% a.a.** |
+| Call no p25 do spread | 2,91% | 4,08% |
+| Call na mediana do spread | −2,66% | −4,06% |
+| **Ação long-only completa** | **14,39%** | **14,39%** |
+
+A mid-a-mid a v2 **passa a bater a ação** (17,32% contra 14,39%), o que a
+v1 não fazia. Em qualquer custo realista continua perdendo.
+
+**De onde vem o ganho — e por que ele é frágil.** As 343 pernas que vão a
+liquidação rendem **+168% em média**, e são justamente as de contratos
+**menos líquidos** (mediana de 2 negócios no dia da entrada, contra 8 no
+geral). Não é bug: com `w` ≈ 8% e delta 0,56, um movimento de +10,7% na
+ação — a mediana dessas pernas — vira ~+130% na call. E 81% delas vencem
+dentro do dinheiro, o que é esperado, já que só chegam ao vencimento os
+casos em que o HiLo continuou comprado, isto é, a ação subindo.
+
+O ponto é outro: a v1 **descartava** essas pernas, e elas são
+desproporcionalmente vencedoras. Ou seja, **a v1 era enviesada para
+baixo** — descartava não aleatoriamente, mas exatamente onde o contrato
+parava de negociar, que correlaciona com movimento grande.
+
+**Teste de robustez — exigir liquidez mínima no contrato na entrada:**
+
+| Mín. negócios | Cobertura | Call mid | Call p25 | Dif vs ação restrita (p25) |
+|---|---|---|---|---|
+| 1 (sem exigência) | 82% | **17,32%** | 4,08% | −4,22 |
+| 3 | 64% | 14,05% | 4,77% | −3,07 |
+| 5 | 54% | 12,96% | 5,28% | −2,76 |
+| 10 | 44% | 11,64% | 6,34% | −1,32 |
+| 20 | 33% | 11,26% | 7,47% | −0,51 |
+| 50 | 20% | 11,39% | 8,94% | +0,61 |
+
+**O ganho a mid some quando se exige liquidez.** Com ≥10 negócios no dia
+da entrada a call cai para 11,64%, abaixo dos 14,39% da ação — e a
+cobertura cai para 44%. Exigir liquidez melhora o resultado líquido de
+spread (p25 sobe de 4,08% para 8,94%) mas destrói a cobertura, e em
+nenhum patamar a call bate os 14,39% da ação com custo realista.
+
+**Veredito da v2:** as regras novas são melhores — corrigem um viés real
+da v1 e elevam a cobertura de 58% para 83%. Mas a conclusão não muda:
+**comprar a ação continua vencendo**, porque o único cenário em que a
+call ganha (mid-a-mid, sem exigir liquidez) depende de executar ao preço
+de contratos que negociaram 2 vezes no dia.
+
+Filtro de dados aplicado: 25 pernas (0,7%) descartadas por evento
+societário — retorno do spot bruto do acervo divergindo >15 p.p. do
+ajustado, o que deixa o par strike/spot inconsistente e o intrínseco
+errado.
