@@ -297,9 +297,44 @@ sem call negociável na base. O **spread**, não. Os nomes que entram são
 mais finos que os 6 testados, e spread de opção piora com liquidez — a
 expectativa honesta é que a cobertura melhore e o pedágio piore.
 
-Refazer §12.3/§12.4 sobre o acervo é a pendência de maior retorno aqui.
-Até lá, **os números de §12.3 a §12.5 valem para 6 ativos e não devem ser
-extrapolados para a carteira.**
+**Primeira medição sobre o acervo (10/09/2026).** As duas metades da
+previsão acima se confirmaram, e o saldo é negativo.
+
+*Cobertura:* virou ~100%. WEGE3, MGLU3 e SUZB3 — nenhum deles na base
+antiga — têm call ATM mensal com >20 dias corridos em **501 de ~500
+pregões** de 2024–2025, contra os 51–97% da base de 6. A penalidade de
+−6,2 p.p. do §12.7 praticamente desaparece.
+
+*Spread:* piorou muito. Meio spread bid-ask (% do mid, um lado), calls
+mensais de 10–60 dias com |ln(K/S)|<0,05, em 2024–2025:
+
+| Ativo | p25 | Mediana |
+|---|---|---|
+| BOVA11 | 2,9% | 5,8% |
+| PETR4 | 2,8% | 5,9% |
+| VALE3 | 3,3% | 7,1% |
+| BBDC4 | 5,7% | 10,4% |
+| BBAS3 | 6,7% | 12,8% |
+| MGLU3 | 7,7% | 16,3% |
+| B3SA3 | 9,8% | 19,3% |
+| ABEV3 | 11,5% | 20,7% |
+| ITUB4 | 10,8% | 22,0% |
+| WEGE3 | 15,5% | 31,2% |
+| SUZB3 | 14,8% | 32,1% |
+| EQTL3 | 33,3% | 58,1% |
+
+(PETR4 deu 5,9% aqui contra 6,65% medido na base antiga, e o ranking é
+idêntico — a medição está calibrada.)
+
+**O ponto de equilíbrio é ~4–5% por lado.** Só BOVA11, PETR4 e VALE3
+chegam perto, e apenas no quartil bom de execução. Todo ativo que o
+acervo acrescentou está de 3× a 12× acima do equilíbrio.
+
+**Conclusão revista:** ampliar o universo não salva a estratégia de call —
+troca uma restrição de cobertura por um pedágio maior. Ela continua
+defensável só nos 3 nomes mais líquidos, e só executando perto do mid.
+Os números de §12.3 a §12.5 seguem valendo para os 6 ativos testados;
+o que mudou é que agora sabemos que ampliar não ajuda.
 
 ### 12.7 A restrição de cobertura custa mais que a convexidade paga
 
