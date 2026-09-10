@@ -57,9 +57,20 @@ TICKERS = [
 # opcoes-sinal-diario (data/opcoes/) tiver historico -- ver ACHADOS.md
 # §12.1 e §12.6.
 ATIVOS_COM_OPCAO = ["PETR4", "VALE3", "BOVA11", "BBDC4", "BBAS3", "ITUB4"]
-SPREAD_MEDIANO_PCT = {"PETR4": 6.7, "VALE3": 8.3, "BOVA11": 8.1,
-                      "BBDC4": 15.0, "BBAS3": 17.8, "ITUB4": 22.8}
-DC_ENTRADA_MIN = 20     # so entra em vencimento com mais de 20 dias corridos
+# Spread mediano por lado, MEDIDO NO ACERVO (acervo-opcoes-b3, 2015-2026).
+# Substituiu em 10/09 os valores que vinham de uma base de 12 ativos
+# (6,7 / 8,3 / 8,1 / 15,0 / 17,8 / 22,8) -- amostra maior, todos menores.
+SPREAD_MEDIANO_PCT = {"PETR4": 5.6, "VALE3": 7.7, "BOVA11": 8.3,
+                      "BBDC4": 13.0, "BBAS3": 15.7, "ITUB4": 20.4}
+
+# Prazo ALVO do vencimento, em dias corridos. Antes era "1o vencimento com
+# mais de 20 dias". Mudou para ~60 em 10/09: a grade 30/45/60 mostrou que
+# 60 corta a rolagem de 0,63 para 0,35 por episodio e e o unico prazo que
+# melhora o resultado no custo realista (p25 4,95% contra 3,88-4,04%).
+# ATENCAO: o ganho e economia de pedagio, nao retorno -- no mid-a-mid 60d e
+# o PIOR dos quatro. Ver ACHADOS.md §12.12.
+DC_ENTRADA_ALVO = 60
+DC_ENTRADA_MIN = 22     # nunca entrar com menos que isso ate o vencimento
 
 
 def estimar_ohlc_intraday(ticker, dia):
@@ -93,17 +104,24 @@ def terceira_sexta(ano, mes):
     return d + datetime.timedelta(days=(4 - d.weekday() + 7) % 7) + datetime.timedelta(weeks=2)
 
 
-def vencimento_alvo(dia, dc_min=DC_ENTRADA_MIN):
-    """1o vencimento mensal (3a sexta) com mais de dc_min dias corridos."""
+def vencimento_alvo(dia, dc_alvo=DC_ENTRADA_ALVO, dc_min=DC_ENTRADA_MIN):
+    """Vencimento mensal (3a sexta) com prazo mais proximo de dc_alvo.
+
+    Os vencimentos mensais sao ~30 dias apartados, entao "60 dias" nunca cai
+    exato: dependendo do dia do mes o escolhido tem de ~36 a ~71 dias. Isso e
+    do desenho da B3, nao da regra.
+    """
     ano, mes = dia.year, dia.month
-    for _ in range(4):
+    cands = []
+    for _ in range(6):
         v = terceira_sexta(ano, mes)
-        if (v - dia).days > dc_min:
-            return v
+        dc = (v - dia).days
+        if dc > dc_min:
+            cands.append((abs(dc - dc_alvo), v))
         mes += 1
         if mes > 12:
             mes, ano = 1, ano + 1
-    return None
+    return min(cands)[1] if cands else None
 
 
 # letra da serie de CALL por mes de vencimento (padrao B3)
@@ -112,7 +130,7 @@ LETRA_CALL = {1: "A", 2: "B", 3: "C", 4: "D", 5: "E", 6: "F",
 
 
 def recomendar_call(ticker, spot, dia):
-    """Contrato alvo: call ATM do 1o vencimento mensal com >20 dias corridos.
+    """Contrato alvo: call ATM do vencimento mensal mais proximo de 60 dias.
 
     Nao consulta cotacao de opcao -- o vencimento e deterministico (3a sexta)
     e o strike alvo e o spot. Na hora de executar, pegue o strike LISTADO mais

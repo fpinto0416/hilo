@@ -690,3 +690,38 @@ Duas ressalvas metodológicas:
 o caminho das pernas e só depois somou CDI nos dias vagos, o que descartava
 o CDI acumulado entre pernas (deu 11,57% a.a. em vez de 17,21%). Correção:
 passada sequencial única. Ver o aviso no topo do arquivo.
+
+### 12.15 Regra de produção alterada para ~60 dias (10/09/2026)
+
+`hilo_long_only.py` passou a sugerir o vencimento mensal **mais próximo de
+60 dias corridos** (`DC_ENTRADA_ALVO = 60`), no lugar do "1º vencimento com
+mais de 20 dias". Base: §12.12.
+
+Como os vencimentos mensais são ~30 dias apartados, "60 dias" nunca cai
+exato — o escolhido tem de ~46 a ~71 dias conforme o dia do mês. É do
+desenho da B3, não da regra.
+
+`seis60.py` refaz a coluna do painel no prazo novo, por ativo, no spread
+mediano medido no acervo:
+
+| ticker | spread | call − ação (v2) | **call − ação (60d)** |
+|---|---|---|---|
+| PETR4 | 5,6% | +2,70 | **+4,36** |
+| VALE3 | 7,7% | +3,68 | **+4,85** |
+| BOVA11 | 8,3% | −3,97 | −3,57 |
+| BBDC4 | 13,0% | −2,67 | −4,15 |
+| BBAS3 | 15,7% | −9,96 | −9,33 |
+| ITUB4 | 20,4% | −12,53 | −9,87 |
+
+**O ponto de equilíbrio fica em ~8% de spread por lado.** PETR4 e VALE3
+executam abaixo disso; os outros quatro não. BOVA11 fica no limite e
+continua negativo.
+
+Nota: os spreads acima vêm do **acervo** e substituem os que o painel
+publicava antes (6,7 / 8,3 / 8,1 / 15,0 / 17,8 / 22,8), medidos numa base
+de 12 ativos. A amostra maior deu spreads **menores** em cinco dos seis.
+
+Isso **não** reverte §12.8: no agregado de 50 ativos a call continua
+perdendo da estratégia completa em ação. E as ressalvas de §12.13 (o
+resultado depende de CDI ≥ ~8%) e §12.14 (o drawdown não é menor)
+continuam valendo integralmente para PETR4 e VALE3.

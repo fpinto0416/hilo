@@ -7,3 +7,4 @@ __pycache__/
 *.pyc
 pesquisa/calls/acervo50/*.parquet
 pesquisa/calls/acervo50/*.csv
+pesquisa/calls/acervo50/*.pkl
