@@ -1,0 +1,7 @@
+# saida do P&D: 31 MB, regeneravel rodando pesquisa/hilo_walkforward_payoff_v8.py
+saidas_wf_hilo.xlsx
+saidas_hilo_4h.xlsx
+pesquisa/calls/res.pkl
+pesquisa/calls/pernas.csv
+__pycache__/
+*.pyc
