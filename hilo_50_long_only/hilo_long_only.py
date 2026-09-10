@@ -49,10 +49,13 @@ TICKERS = [
     "YDUQ3",
 ]
 
-# Ativos em que a call ATM mensal tem historico negociado suficiente pra
-# a recomendacao fazer sentido. Ver RESULTADOS.md, secao "Call ATM rolada":
-# so estes 6 tem opcao com cobertura utilizavel, e so PETR4/VALE3/BOVA11
-# tem spread perto do ponto de equilibrio.
+# Ativos com spread de call ATM MEDIDO (pesquisa/ACHADOS.md §12.4).
+# ATENCAO: nao sao os unicos com opcao liquida -- o COTAHIST de 2025 tem
+# call negociada em 155 raizes, e ~74 dos 81 ativos daqui estao entre
+# elas. Estes 6 sao os que a base consultada na epoca cobria, e portanto
+# os unicos com spread medido. Ampliar quando o acervo Parquet de
+# opcoes-sinal-diario (data/opcoes/) tiver historico -- ver ACHADOS.md
+# §12.1 e §12.6.
 ATIVOS_COM_OPCAO = ["PETR4", "VALE3", "BOVA11", "BBDC4", "BBAS3", "ITUB4"]
 SPREAD_MEDIANO_PCT = {"PETR4": 6.7, "VALE3": 8.3, "BOVA11": 8.1,
                       "BBDC4": 15.0, "BBAS3": 17.8, "ITUB4": 22.8}

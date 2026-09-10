@@ -197,10 +197,17 @@ strike/vencimento/bid/ask). O repo `opcoes-sinal-diario` **não** serve:
 `data/raw` está vazio, o `.db` não é versionado e ele só cobre PUT de
 7 ativos em shadow mode desde 08/2026.
 
-### 12.1 Só 6 ativos são operáveis
+### 12.1 Só 6 ativos foram TESTÁVEIS — e isso era limitação da base
 
-O COTAHIST só grava opção que **negociou**. Cobertura dos episódios
-long do HiLo 50:
+**CORREÇÃO (10/09/2026).** A versão anterior desta seção dizia "só 6 de
+81 ativos têm call ATM negociável". **Está errado.** O `vol_implicita.db`
+tem 12 ativos porque o ETL dele foi configurado para 12 — não porque a B3
+só tenha opção neles. Varrendo o COTAHIST de 2025 direto: **155 raízes**
+com call negociada em 100+ pregões, e **~74 dos 81 ativos** da carteira
+long-only estão entre elas.
+
+O que segue vale para os 6 ativos que a base cobria, e a cobertura de
+episódios abaixo é a cobertura **na base consultada**, não no mercado:
 
 | Ativo | Episódios cobertos | Marcação por modelo |
 |---|---|---|
@@ -213,8 +220,9 @@ long do HiLo 50:
 | PETR3 | 33/70 (47%) | 38,6% |
 | SMAL11 | 16/65 (25%) | 22,9% |
 
-**6 de 81 ativos** têm call ATM negociável com regularidade. A ideia não
-é aplicável à carteira — só a um punhado de nomes.
+Ou seja: o teste rodou em 6 ativos porque a base tinha 6, não porque o
+mercado tenha 6. O acervo Parquet criado em `opcoes-sinal-diario`
+(`data/opcoes/`) existe para remover essa limitação — ver §12.6.
 
 ### 12.2 Desenho do teste
 
@@ -265,7 +273,7 @@ Meio spread bid-ask em % do mid (calls ATM, delta 0,35–0,65, mensais,
 
 Ganha em 2/6 no p25 e **0/6** no spread mediano.
 
-### 12.5 Conclusão
+### 12.5 Conclusão (dentro dos 6 ativos testados)
 
 **Não substituir a ação pela call como regra.** A vantagem existe antes
 de custo (+3,3 p.p. a.a., 6/6 ativos) mas o spread medido supera o ponto
@@ -281,6 +289,38 @@ Ressalvas que empurram nos dois sentidos:
 - 563 pernas em 6 ativos correlacionados — não são 563 observações
   independentes.
 
+### 12.6 O que muda com o acervo Parquet — e o que não muda
+
+Com ~74 ativos em vez de 6, a **penalidade de cobertura** (§12.7 abaixo,
+−6,2 p.p. a.a.) deve encolher muito: ela vinha de o sinal disparar em dia
+sem call negociável na base. O **spread**, não. Os nomes que entram são
+mais finos que os 6 testados, e spread de opção piora com liquidez — a
+expectativa honesta é que a cobertura melhore e o pedágio piore.
+
+Refazer §12.3/§12.4 sobre o acervo é a pendência de maior retorno aqui.
+Até lá, **os números de §12.3 a §12.5 valem para 6 ativos e não devem ser
+extrapolados para a carteira.**
+
+### 12.7 A restrição de cobertura custa mais que a convexidade paga
+
+Nos 6 ativos, 2009–2026, mesma construção de carteira:
+
+| Versão | Retorno a.a. | Exposição |
+|---|---|---|
+| Buy & hold | 14,76% | 100% |
+| Ação, sinal long-only completo | **10,57%** | 55% |
+| Ação, só nos episódios com call na base | 4,39% | 30% |
+| Call ATM rolada, mid-a-mid | ~7,4% | 30% |
+
+Exigir call negociável derruba o retorno em **−6,2 p.p.**; a convexidade
+devolve no máximo +3,0 p.p. Mesmo a custo zero, a versão em call perde da
+ação. **Mas esse número é da base de 6 ativos** — é exatamente ele que
+deve mudar com o acervo.
+
+Vol e drawdown da versão em call não são reportáveis: exigem marcar a
+opção todo dia, e as duas tentativas deram vol de 82% a.a. — artefato da
+marcação por modelo, não resultado.
+
 **Variante literal rejeitada:** colocar 100% do capital em prêmio (em vez
 do delta-equivalente) dá −97% a.a. e vol de 392%. Com w mediano de 6,6%,
 isso é ~15× de alavancagem sobre o ativo; a ruína é aritmética, não azar.
@@ -288,6 +328,9 @@ isso é ~15× de alavancagem sobre o ativo; a ruína é aritmética, não azar.
 ## 13. Pendências
 
 **Alta**
+0. **Refazer §12 sobre o acervo Parquet de `opcoes-sinal-diario`**
+   (`data/opcoes/`), com ~74 ativos em vez de 6. É a pendência que mais
+   muda conclusão — ver §12.6.
 1. Recoletar a base diária via tvDatafeed para eliminar os 17 suspeitos.
 2. Medir o custo de transação real da **ação** (os 30 bps são chute).
 3. Corrigir os bugs 8 e 9 no `hilo_walkforward_payoff_v8.py` e regerar.
