@@ -37,3 +37,15 @@ Os `.parquet` intermediários **não são versionados** (~33 MB, regeneráveis).
   vez e atravessa as rolagens.
 - **O baseline que decide é o long-only COMPLETO** (`completo.py`), não a
   ação restrita aos episódios com call. É contra ele que a call perde.
+
+## Prazo, CDI e risco (§12.12–12.14)
+
+- `motor5.py` — motor com prazo alvo parametrizado (`dc_alvo`)
+- `comparar_prazo.py` — 30/45/60 dias contra a regra v2
+- `cdi.py` — decompõe quanto do retorno é CDI e roda sensibilidade 0/5/10/14%
+- `risco.py` — risco por perna + drawdown em resolução de perna
+- `porque_dd.py` — assimetria frequência x tamanho, exposição delta-equivalente
+- `dd_diario.py` — carteira marcada a mercado DIARIAMENTE (a medida correta de
+  drawdown; as anteriores mediam só no encerramento da perna)
+
+Ordem para reproduzir: `rodar3.py` -> `filtrar.py` -> `dd_diario.py`.

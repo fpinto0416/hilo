@@ -579,3 +579,114 @@ custa cobertura.
 
 **Conclusão:** vender a perna de delta 15 financia parte do prêmio e cobra
 por isso justamente onde a estratégia ganha dinheiro. Não usar.
+
+### 12.12 Prazo maior (~60 dias) reduz rolagem mas não muda o veredito
+
+`motor5.py` parametriza o prazo alvo (`dc_alvo`); `comparar_prazo.py` roda
+30/45/60 dias contra a regra v2.
+
+| alvo | pernas | cobertura | dc entrada | rolagens/ep | mid | p25 | mediana |
+|---|---|---|---|---|---|---|---|
+| v2 | 3.430 | 82% | 42 | 0,63 | 17,27% | 4,04% | −4,09% |
+| 30d | 3.538 | 82% | 38 | 0,68 | 17,32% | 3,97% | −4,24% |
+| 45d | 3.352 | 82% | 43 | 0,59 | 16,93% | 3,88% | −4,17% |
+| 60d | 2.869 | 82% | 59 | **0,35** | 16,83% | **4,95%** | −2,69% |
+
+O prazo de 60 dias corta a rolagem quase pela metade (0,63 → 0,35 por
+episódio) e melhora o p25 em ~0,9 pp. É o melhor dos quatro, mas continua
+abaixo dos 14,39% da ação completa.
+
+**Por que reduzir rolagem ajuda tão pouco:** são 1,75 pernas por episódio,
+das quais só 0,63 vêm de rolagem. Entrada e saída do episódio são
+**irredutíveis — 64% das pernas**. Não há como espremer muito mais.
+
+### 12.13 O resultado depende fortemente da premissa de CDI
+
+`cdi.py`. Durante a operação a call deixa **92% do capital em caixa**; a
+ação deixa **0%**. Com CDI a 10% isso são ~9,2 pp a.a. antes de qualquer
+resultado da opção.
+
+Decomposição (50 ativos, mid): dos 17,33% da call, **+9,87 pp são CDI —
+57% do retorno**. No p25 o CDI é 216% do retorno (ex-CDI a call é −4,73%).
+
+Sensibilidade em PETR4/VALE3/BOVA11:
+
+| CDI | call mid | call p25 | call mediana | ação | dif na mediana |
+|---|---|---|---|---|---|
+| 0% | 15,33% | 10,37% | 4,65% | 7,93% | **−3,28** |
+| 5% | 20,55% | 15,39% | 9,43% | 10,26% | −0,83 |
+| 10% | 25,76% | 20,39% | 14,20% | 12,54% | +1,65 |
+| 14% | 29,91% | 24,37% | 18,00% | 14,33% | +3,67 |
+
+**A afirmação "nos 3 líquidos a call empata com a ação até no spread
+mediano" só vale com CDI ≥ ~8%.** A CDI zero ela perde por 3,3 pp. O que
+não depende da taxa: a mid e no p25 a call ganha em qualquer nível.
+
+Fraqueza declarada: usa-se **CDI fixo em 10% a.a. de 2015 a 2026**, e a
+SELIC foi de 2% (2020) a 14,25% (2015-16). A média histórica fica perto de
+10%, mas o *timing* importa — se os ganhos da opção se concentraram em
+2020, o valor fixo credita juro que não existia. Não há série real de CDI
+no acervo.
+
+### 12.14 O drawdown da call NÃO é menor que o da ação
+
+`risco.py` (por perna) e `dd_diario.py` (carteira marcada a mercado todo
+dia, call pelo último negócio do pregão e caixa rendendo CDI dia a dia).
+
+A intuição natural — "92% em caixa, então o drawdown tem que ser muito
+menor" — **é falsa**.
+
+| Carteira | retorno | DD diário | vol |
+|---|---|---|---|
+| **50 ativos** | | | |
+| call + CDI (mid) | +17,21% | **−21,52%** | 11,4% |
+| call + CDI (p25) | +3,97% | **−44,62%** | 8,8% |
+| ação 100% | +11,00% | −18,24% | 10,6% |
+| ação com a MESMA exposição + CDI | +9,79% | **−0,21%** | 0,5% |
+| **PETR4/VALE3/BOVA11** | | | |
+| call + CDI (mid) | +25,56% | **−22,46%** | 21,7% |
+| call + CDI (p25) | +20,20% | −23,16% | 20,5% |
+| ação 100% | +17,36% | −20,91% | 18,7% |
+| ação mesma exposição + CDI | +10,11% | **−0,41%** | 0,8% |
+
+A última linha de cada bloco é a prova: a exposição mediana real da call é
+`w × delta` = **4,5% do capital**. Pôr 4,5% em ação e 95,5% no CDI dá
+**−0,21%** de drawdown. A call, com a mesma exposição delta, dá −21,52%.
+Por perna, o desvio do sleeve em call é **15,36%** contra **1,04%** da ação
+delta-equivalente — **15×**.
+
+Mecanismo (média do sleeve por faixa de movimento do ativo):
+
+| movimento do ativo | call | ação |
+|---|---|---|
+| caiu >5% | −6,80% | −9,47% |
+| caiu 0–5% | −3,71% | −3,24% |
+| **subiu 0–5%** | **−0,57%** | **+2,03%** |
+| subiu >5% | +18,52% | +14,52% |
+
+A call **perde quando o ativo sobe pouco** — o theta come a alta. Daí
+67,2% das pernas em call negativas contra 59,1% da ação. Perdas pequenas,
+frequentes e encadeadas compõem drawdown tão bem quanto perdas grandes e
+raras.
+
+**Risco limitado por operação ≠ risco limitado na carteira quando a
+operação se repete 3.400 vezes.** O teto de perda protege contra ruína num
+trade; não protege o patrimônio contra sangria. Quem quer o perfil de
+"quase tudo em caixa" obtém drawdown de −0,2% comprando **ação** na
+exposição equivalente, não comprando call.
+
+Duas ressalvas metodológicas:
+
+1. A marcação **diária piorou a call**: −17,84% (resolução de perna) →
+   −21,52%, mesma construção. O número da ação também mudou (−23,98% →
+   −18,24%) mas ali mudaram duas coisas — episódio contínuo e preço
+   ajustado —, então essa parte não é comparação limpa.
+2. **38,8% dos dias de perna não tiveram negócio no contrato** (50
+   ativos), preenchidos por ffill. Isso alisa a curva da call: o DD real é
+   provavelmente **pior** que −21,52%. Nos 3 líquidos a lacuna cai para
+   12,3%.
+
+**Bug corrigido no caminho:** a primeira versão de `dd_diario.py` construiu
+o caminho das pernas e só depois somou CDI nos dias vagos, o que descartava
+o CDI acumulado entre pernas (deu 11,57% a.a. em vez de 17,21%). Correção:
+passada sequencial única. Ver o aviso no topo do arquivo.
