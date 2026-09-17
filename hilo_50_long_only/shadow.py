@@ -71,10 +71,20 @@ LIMITE_PRINT = 0.20
 # ---------------------------------------------------------------- dados ---
 
 def calendario():
-    """Pregoes de INICIO ate o ultimo dia com opcao E CDI no acervo."""
+    """Pregoes de INICIO ate o ultimo dia com opcao no acervo."""
     dias = sorted(pd.Timestamp(p.stem) for p in (ACERVO / "opcoes").glob("*/*.parquet"))
-    cal = pd.DatetimeIndex([d for d in dias if d >= INICIO])
-    return cal[cal <= cdi_mod.carregar().index.max()]
+    return pd.DatetimeIndex([d for d in dias if d >= INICIO])
+
+
+def carregar_cdi(cal):
+    """Fator diario do CDI nos pregoes do calendario.
+
+    O BCB publica o CDI de D so em D+1, e o acervo baixa de madrugada -- o
+    ultimo pregao costuma chegar sem CDI. Esses dias usam o ultimo fator
+    conhecido (diferenca de centavos, e o valor certo entra na rodada
+    seguinte, porque a curva e recalculada inteira)."""
+    s = cdi_mod.carregar(INICIO - pd.Timedelta(days=10), cal[-1])
+    return s.reindex(s.index.union(cal)).ffill().reindex(cal)
 
 
 def atualizar_sinal(cal):
@@ -284,7 +294,8 @@ def rodar():
     cal = calendario()
     sig = atualizar_sinal(cal)
     cal = cal[cal <= sig["data"].max()]
-    fcdi = cdi_mod.carregar(INICIO, cal[-1])
+    fcdi = carregar_cdi(cal)
+    cdi_estimado = [str(d.date()) for d in cal if d > cdi_mod.carregar().index.max()]
     C, S = opcoes(cal)
     a81, bh81, est81 = acoes(sig, fcdi, cal, TICKERS)
     a6, bh6, _ = acoes(sig, fcdi, cal, ATIVOS_COM_OPCAO)
@@ -299,6 +310,7 @@ def rodar():
     ult = sig[sig["data"] == cal[-1]]
     resumo = dict(inicio=str(INICIO.date()), fim=str(cal[-1].date()), pregoes=len(cal) - 1,
                   retorno_pct={k: round((curva[k].iloc[-1] / CAPITAL - 1) * 100, 2) for k in curva},
+                  cdi_estimado=cdi_estimado,
                   comprados_81=int(ult["comprado"].sum()), universo_81=int(ult["ticker"].nunique()),
                   trocas_81=int(sig.sort_values("data").groupby("ticker")["comprado"]
                                 .apply(lambda x: (x.diff().abs() > 0).sum()).sum()))
