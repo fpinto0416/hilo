@@ -361,7 +361,7 @@ def html(curva, pernas, resumo):
             f'<td class="num">{x["strike"]:.2f}'.replace(".", ",") + '</td>'
             f'<td class="num">{_data(x["venc"])}</td>'
             f'<td class="num">{_data(x["entrada"])} a {x["p_ult_ent"]:.2f}'.replace(".", ",") + '</td>'
-            f'<td class="num">{("hoje " if aberta else _data(x["saida"]) + " a ")}{x["p_ult_sai"]:.2f}'.replace(".", ",") + '</td>'
+            f'<td class="num">{(_data(resumo["fim"]) + " a ") if aberta else (_data(x["saida"]) + " a ")}{x["p_ult_sai"]:.2f}'.replace(".", ",") + '</td>'
             f'<td class="num" style="color:{_cor(x["resultado_pct"])}">{_pct(x["resultado_pct"])}</td>'
             f'<td>{x["motivo"]}</td></tr>')
     n = resumo["pregoes"]
