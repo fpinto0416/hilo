@@ -71,3 +71,25 @@ compartilhar número, extraia a aba em CSV.
 `opcoes-sinal-diario` (que só tem PUT de 7 ativos, shadow mode, e não
 versiona o `.db`). Conclusão em `ACHADOS.md` §12: vantagem real a
 mid-a-mid, mas o spread medido come tudo em 6/6 ativos. Não virar regra.
+
+## Shadow (paper trading) — `shadow.py`, desde 17/09/2026
+
+Acompanha a recomendação diária desde 10/09/2026 de duas formas: **ações**
+(81 do card e só os 6 com opção) e **calls ATM ~60d** nos 6. Roda sob
+demanda (atualização do Painel de Sinais): `python3 shadow.py --html X`
+grava `shadow/` e o bloco do painel. Regras que não são óbvias:
+
+- `shadow/sinal.csv` é **append-only** — decisão e retorno do dia ficam
+  congelados na 1ª vez que o pregão é processado (o yfinance reajusta o
+  passado a cada provento). Nunca regenerar do zero.
+- Preço da call = **último negócio ± spread medido** (`SPREAD_MEDIANO_PCT`).
+  O bid/ask de fechamento do COTAHIST vem zerado/absurdo nessas séries.
+- Print com último a >20% do preço médio da série no dia é descartado
+  (BOVAK185 em 10/09 fechou a 17,00 com médio 11,63). O médio **não** é
+  usado como preço — é look-ahead.
+- Vencimento vem do acervo, não da "3ª sexta": nov/2026 vence **19/11**
+  (20/11 é feriado). O `hilo_long_only.py` ainda mostra 20/11 — bug de
+  exibição em aberto.
+- Enquanto o `daily-hilo.yml` da `main` não rodar este subprojeto (branch
+  não mergeada), o shadow é **reconstruído** a cada atualização com dado
+  que só olha pra trás; só o passado já gravado é garantidamente fixo.
