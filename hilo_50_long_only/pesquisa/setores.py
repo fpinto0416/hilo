@@ -110,6 +110,31 @@ def metricas(r, nome, bh=None):
     return out
 
 
+def janelas_252(r, n=252):
+    """% de janelas moveis de 252 pregoes com retorno positivo.
+
+    ATENCAO ao ler: janela movel sobreposta NAO e tamanho amostral -- 6.000
+    janelas de 252 dias em 26 anos vem de ~26 independentes (regra do
+    CLAUDE.md do subprojeto). Por isso a tabela reporta tambem `anos`, que e
+    o n independente de verdade.
+    """
+    c = (1 + r).cumprod()
+    j = (c / c.shift(n) - 1).dropna()
+    return float((j > 0).mean() * 100) if len(j) else float("nan")
+
+
+def por_ativo_252(series, tickers, col):
+    """Media, ENTRE ATIVOS, do % de janelas de 252 positivas de cada um.
+
+    E diferente de medir na curva da carteira: aqui cada ativo e avaliado
+    isolado e depois se tira a media -- responde "em quantas janelas de 1 ano
+    o ativo tipico ficou positivo", nao "a carteira ficou".
+    """
+    v = [janelas_252(series[t][col]) for t in tickers if t in series]
+    v = [x for x in v if x == x]
+    return round(float(np.mean(v)), 1) if v else float("nan")
+
+
 def carteira(series, tickers, col):
     """Equal-weight diario dos ativos disponiveis no dia."""
     df = pd.DataFrame({t: series[t][col] for t in tickers if t in series})
@@ -141,17 +166,26 @@ def main():
         e, b = carteira(series, tk, "estrat"), carteira(series, tk, "bh")
         m = metricas(e, sec, b)
         m["n"] = len(tk)
+        m["w252_ativo"] = por_ativo_252(series, tk, "estrat")
+        m["w252_ativo_bh"] = por_ativo_252(series, tk, "bh")
+        m["w252_cart"] = round(janelas_252(e), 1)
         m["tempo_comprado"] = round(carteira(series, tk, "pos").mean() * 100, 1)
         linhas.append(m)
     todos = list(series)
     m = metricas(carteira(series, todos, "estrat"), "TODOS (81)", carteira(series, todos, "bh"))
     m["n"] = len(todos)
+    m["w252_ativo"] = por_ativo_252(series, todos, "estrat")
+    m["w252_ativo_bh"] = por_ativo_252(series, todos, "bh")
+    m["w252_cart"] = round(janelas_252(carteira(series, todos, "estrat")), 1)
     m["tempo_comprado"] = round(carteira(series, todos, "pos").mean() * 100, 1)
     linhas.append(m)
 
     T = pd.DataFrame(linhas).set_index("recorte")
-    T = T[["n", "anos", "aa", "bh_aa", "alfa", "vol", "vol_bh", "dd", "dd_bh", "tempo_comprado"]]
+    T = T[["n", "anos", "aa", "bh_aa", "alfa", "w252_ativo", "w252_ativo_bh", "w252_cart",
+           "vol", "vol_bh", "dd", "dd_bh", "tempo_comprado"]]
     print("=== Setor: estrategia x buy-and-hold DO PROPRIO SETOR (2000-2026) ===")
+    print("w252_ativo = media entre ativos do % de janelas de 252 pregoes positivas")
+    print("w252_cart  = mesmo %, medido na curva da carteira do setor\n")
     print(T.sort_values("alfa", ascending=False).to_string())
 
     # ---- persistencia: o ranking de alfa da 1a metade sobrevive na 2a? ----
