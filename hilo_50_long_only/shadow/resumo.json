@@ -1,0 +1,20 @@
+{
+  "inicio": "2026-09-10",
+  "fim": "2026-09-21",
+  "pregoes": 7,
+  "retorno_pct": {
+    "acoes_81": -0.32,
+    "bh_81": -0.88,
+    "acoes_6": -1.68,
+    "bh_6": -1.75,
+    "calls_6_spread": -4.14,
+    "calls_6_mid": -1.71,
+    "cdi": 0.36
+  },
+  "cdi_estimado": [
+    "2026-09-21"
+  ],
+  "comprados_81": 61,
+  "universo_81": 81,
+  "trocas_81": 12
+}
