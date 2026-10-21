@@ -144,14 +144,34 @@ if os.path.exists(HISTORICO_DIARIO_PATH):
     # workflow rodar 2x no mesmo dia (rerun manual, ou uma rodada
     # agendada disparando bem atrasada), evita duplicar cada ticker
     # (aconteceu de verdade em 27/08, causou 29 linhas duplicadas).
+    # .dt.date: read_excel devolve Timestamp, e Timestamp != date e
+    # sempre True -- sem isso o filtro nao removia nada (01/09 ficou com
+    # 58 linhas). Mesmo bug corrigido no MACD em 26/09.
+    df_hd["data"] = pd.to_datetime(df_hd["data"]).dt.date
     df_hd = df_hd[df_hd["data"] != hoje]
+    df_hd_anterior = df_hd.copy()
     df_hd = pd.concat([df_hd, df_diario], ignore_index=True)
 else:
+    df_hd_anterior = pd.DataFrame(columns=df_diario.columns)
     df_hd = df_diario.copy()
 df_hd.to_excel(HISTORICO_DIARIO_PATH, index=False)
 
-df_final=df_final[df_final['change'] == 1]
-df_final['ordem']=np.where(df_final['posicao']==1,'Compra','Venda')
+# Troca de posicao = estado de hoje diferente do ULTIMO ESTADO GRAVADO no
+# historico_diario.xlsx, e nao o 'change' da serie recalculada (20/10).
+# O 'change' comparava hoje (barra estimada pelos candles de 1h) com ontem
+# recalculado pela barra FINAL do yfinance; o diario guardou ontem pela
+# barra ESTIMADA de ontem. Quando as duas discordavam (barra estimada e
+# barra final em lados diferentes do HiLo) ou quando um dia ficava sem
+# rodada (14/10), a troca sumia do log -- 28 de 69 trocas do diario
+# entre 19/08 e 20/10 nao estavam no historico_ordens.xlsx, e 10 do log
+# nao estavam no diario. Comparar com o ultimo estado gravado deixa o log
+# sendo exatamente a diferenca do diario, e sobrevive a dia sem rodada.
+ultimo_gravado = (df_hd_anterior.sort_values("data")
+                  .groupby("ticker")["ordem"].last().to_dict())
+df_final['ordem']=np.where(df_final['posicao']==1,'Compra',
+                   np.where(df_final['posicao']==-1,'Venda','NEUTRO'))
+df_final=df_final[(df_final['ordem']!='NEUTRO') &
+                  (df_final['ordem']!=df_final['ticker'].map(ultimo_gravado))]
 df_final['data']=hoje
 df_send=df_final[['data','ticker','ordem','price','hilo']]
 
@@ -163,6 +183,7 @@ HISTORICO_PATH = "historico_ordens.xlsx"
 if not df_send.empty:
     if os.path.exists(HISTORICO_PATH):
         df_historico = pd.read_excel(HISTORICO_PATH)
+        df_historico["data"] = pd.to_datetime(df_historico["data"]).dt.date
         # mesmo motivo do historico_diario acima: substitui a troca de
         # 'hoje' por ticker em vez de só concatenar, pra não duplicar se
         # o workflow rodar 2x no mesmo dia.
@@ -242,13 +263,17 @@ data = {"chat_id": TELEGRAM_CHAT_ID, "text": MESSAGE}
 venc_opc1_msn = {"chat_id": TELEGRAM_CHAT_ID, "text": venc_opc1}
 venc_opc2_msn = {"chat_id": TELEGRAM_CHAT_ID, "text": venc_opc2}
 
-response1 = requests.post(url, data=saudacao, timeout=30)
-response0 = requests.post(url, data=data_hoje, timeout=30)
-response = requests.post(url, data=data, timeout=30)
-response2 = requests.post(url, data=venc_opc1_msn, timeout=30)
-response2 = requests.post(url, data=venc_opc2_msn, timeout=30)
-
-print(response.json())  # Para verificar a resposta
+# Falha no Telegram nao pode derrubar o job: o historico ja foi gravado
+# acima, mas com o script saindo com codigo 1 o passo de commit do
+# workflow nao rodava e o pregao se perdia (14/10, ReadTimeout em
+# api.telegram.org). Agora a falha vira aviso e o job segue.
+for payload in (saudacao, data_hoje, data, venc_opc1_msn, venc_opc2_msn):
+    try:
+        r = requests.post(url, data=payload, timeout=30)
+        if not r.ok:
+            print(f"AVISO Telegram: HTTP {r.status_code} -- {r.text[:200]}")
+    except requests.RequestException as e:
+        print(f"AVISO Telegram: falha no envio ({e}) -- historico ja gravado, seguindo.")
 print(df_string)
 
 
