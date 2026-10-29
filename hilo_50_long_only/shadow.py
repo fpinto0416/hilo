@@ -66,6 +66,7 @@ CAPITAL = 100_000.0
 CUSTO_ACAO = 30 / 10000
 DC_ALVO, DC_MIN, DC_ROLA = 60, 22, 10
 LIMITE_PRINT = 0.20
+TOL_MONOTONIA = 0.02   # folga do teste de ordem por strike (ver opcoes())
 
 
 # ---------------------------------------------------------------- dados ---
@@ -154,8 +155,21 @@ def opcoes(cal):
     # sozinho, esse print tirava 7 p.p. do shadow da BOVA11. O medio NAO e
     # usado como preco (VWAP do dia e look-ahead para quem decide no
     # fechamento, ver pesquisa/calls/acervo50/README.md); serve so de teste.
-    fora = (C["medio"] > 0) & ((C["ultimo"] / C["medio"] - 1).abs() > LIMITE_PRINT)
-    C = C[~fora]
+    #
+    # Corrigido em 29/10/2026: so o teste do medio descartava o fechamento
+    # VERDADEIRO em dia de choque (26/10: medio da manha longe do fechamento
+    # em toda a cadeia), e a perna ficava marcada no preco de 23/10. Agora o
+    # print so cai se, alem disso, quebrar a ordem por strike na cadeia do
+    # dia (call acima da de strike menor ou abaixo da de strike maior, com
+    # folga de 2%). 10/09 BOVAK185 (17,00 entre 12,34 e 11,60) segue fora;
+    # 26-28/10 ficam.
+    longe = (C["medio"] > 0) & ((C["ultimo"] / C["medio"] - 1).abs() > LIMITE_PRINT)
+    C = C.sort_values(["ticker", "data", "venc", "strike"])
+    g = C.groupby(["ticker", "data", "venc"])["ultimo"]
+    lo, hi = g.shift(1), g.shift(-1)
+    quebra = (lo.notna() & (C["ultimo"] > lo * (1 + TOL_MONOTONIA))) | \
+             (hi.notna() & (C["ultimo"] < hi * (1 - TOL_MONOTONIA)))
+    C = C[~(longe & quebra)]
     S = pd.concat(spot, ignore_index=True)
     S["data"] = pd.to_datetime(S["data"])
     S["ticker"] = S["isin"].map(alvo)

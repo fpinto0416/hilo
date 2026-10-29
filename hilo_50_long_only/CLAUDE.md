@@ -84,9 +84,14 @@ grava `shadow/` e o bloco do painel. Regras que não são óbvias:
   passado a cada provento). Nunca regenerar do zero.
 - Preço da call = **último negócio ± spread medido** (`SPREAD_MEDIANO_PCT`).
   O bid/ask de fechamento do COTAHIST vem zerado/absurdo nessas séries.
-- Print com último a >20% do preço médio da série no dia é descartado
-  (BOVAK185 em 10/09 fechou a 17,00 com médio 11,63). O médio **não** é
-  usado como preço — é look-ahead.
+- Print com último a >20% do preço médio da série no dia **e** que quebra
+  a ordem por strike na cadeia do dia (call acima da de strike menor ou
+  abaixo da de strike maior, folga de 2%) é descartado (BOVAK185 em 10/09
+  fechou a 17,00 com médio 11,63, entre 12,34 e 11,60). O médio **não** é
+  usado como preço — é look-ahead. Até 29/10/2026 só o teste do médio
+  valia, e ele descartou os fechamentos reais do choque de 26/10 (médio da
+  manhã longe do fechamento na cadeia inteira): as pernas ficaram marcadas
+  no preço de 23/10 e a call aparecia ~9 p.p. melhor do que foi.
 - Vencimento vem do acervo, não da "3ª sexta": nov/2026 vence **19/11**
   (20/11 é feriado). O `hilo_long_only.py` ainda mostra 20/11 — bug de
   exibição em aberto.
