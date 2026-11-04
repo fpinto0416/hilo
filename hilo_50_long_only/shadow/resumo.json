@@ -1,21 +1,18 @@
 {
   "inicio": "2026-09-10",
-  "fim": "2026-10-28",
-  "pregoes": 33,
+  "fim": "2026-10-30",
+  "pregoes": 35,
   "retorno_pct": {
-    "acoes_81": -11.89,
-    "bh_81": -14.33,
-    "acoes_6": -7.39,
-    "bh_6": -12.69,
-    "calls_6_spread": -6.97,
-    "calls_6_mid": -6.06,
-    "cdi": 1.69
+    "acoes_81": -11.87,
+    "bh_81": -17.24,
+    "acoes_6": -7.25,
+    "bh_6": -14.18,
+    "calls_6_spread": -7.12,
+    "calls_6_mid": -6.24,
+    "cdi": 1.8
   },
-  "cdi_estimado": [
-    "2026-10-27",
-    "2026-10-28"
-  ],
-  "comprados_81": 9,
+  "cdi_estimado": [],
+  "comprados_81": 8,
   "universo_81": 81,
-  "trocas_81": 126
+  "trocas_81": 127
 }
