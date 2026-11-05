@@ -22,7 +22,9 @@ jobs:
     # de hoje via candles de 1h do yfinance) -- sem mais nenhum motivo
     # pra manter este repo fora da VPS dedicada dos outros 6.
     runs-on: [self-hosted, self-hosted-hilo]
-    timeout-minutes: 10
+    # 30min: o projeto_hilo.py roda 29 tickers, o long-only roda 81 --
+    # cada um com 2 chamadas de yfinance por ticker.
+    timeout-minutes: 30
 
     steps:
       - name: Baixar código
@@ -45,11 +47,24 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python projeto_hilo.py
 
+      - name: Rodar HiLo long-only (subprojeto)
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        working-directory: hilo_50_long_only
+        run: python hilo_long_only.py
+
       - name: Salvar histórico de ordens
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add historico_ordens.xlsx historico_diario.xlsx
+          # CUIDADO: este 'git add' precisa cobrir TODOS os arquivos de
+          # saída da run -- os 2 da raiz e os 2 do subprojeto long-only.
+          # Já aconteceu (aqui e no opcoes-sinal-diario) de o workflow
+          # commitar só parte deles e o resto sumir em silêncio.
+          git add historico_ordens.xlsx historico_diario.xlsx \
+                  hilo_50_long_only/historico_ordens_long_only.xlsx \
+                  hilo_50_long_only/historico_diario_long_only.xlsx
           git diff --staged --quiet || git commit -m "chore: atualiza histórico de ordens $(date +'%Y-%m-%d')"
           # rebase antes do push -- evita perder a rodada se colidir com
           # outro commit (rerun manual, ou rodada agendada disparando
